@@ -15,7 +15,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build
-      - uses: actions/upload-artifact@v4
+      # Gitea Actions does not support the GitHub-only artifact v4 protocol.
+      - uses: actions/upload-artifact@v3
         with:
           name: ios-js-bundle
           path: dist
