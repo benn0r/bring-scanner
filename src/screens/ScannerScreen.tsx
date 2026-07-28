@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera';
 import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +8,9 @@ import { addItem } from '../services/bringApi';
 import { lookupProduct } from '../services/productLookup';
 import { loadCredentials, loadCustomBarcodes, loadSelectedList } from '../services/storage';
 import { Product } from '../types';
+import { keepBestGeometry, selectMostCentered } from '../services/barcodeSelection';
+
+const CANDIDATE_WINDOW_MS = 180;
 
 export function ScannerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -17,15 +20,32 @@ export function ScannerScreen() {
   const [product, setProduct] = useState<Product | null>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const candidates = useRef(new Map<string, BarcodeScanningResult>());
+  const candidateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scanTarget = useRef({ x: 175, y: 215 });
+  const scanLocked = useRef(false);
 
   useFocusEffect(useCallback(() => { let live = true; Promise.all([loadCredentials(), loadSelectedList()]).then(([c, l]) => live && setConfigured(Boolean(c && l))); return () => { live = false; }; }, []));
-  useEffect(() => { if (!product) setScanning(true); }, [product]);
+  useEffect(() => { if (!product) { scanLocked.current = false; setScanning(true); } }, [product]);
+  useEffect(() => () => { if (candidateTimer.current) clearTimeout(candidateTimer.current); }, []);
+
+  function collectCandidate(result: BarcodeScanningResult) {
+    if (!scanning || busy || scanLocked.current) return;
+    keepBestGeometry(candidates.current, result, scanTarget.current);
+    if (candidateTimer.current) return;
+    candidateTimer.current = setTimeout(() => {
+      const selected = selectMostCentered([...candidates.current.values()], scanTarget.current);
+      candidates.current.clear();
+      candidateTimer.current = null;
+      if (selected) { scanLocked.current = true; handleBarcode(selected.data); }
+    }, CANDIDATE_WINDOW_MS);
+  }
 
   async function handleBarcode(value: string) {
     if (!scanning || busy) return;
     setScanning(false); setBusy(true); setError(''); setMessage('');
     try { const found = await lookupProduct(value, await loadCustomBarcodes()); if (!found) throw new Error('Product not found. Add a custom label in Settings and scan again.'); setProduct(found); }
-    catch (e) { setError(e instanceof Error ? e.message : 'Product lookup failed.'); setScanning(true); }
+    catch (e) { scanLocked.current = false; setError(e instanceof Error ? e.message : 'Product lookup failed.'); setScanning(true); }
     finally { setBusy(false); }
   }
 
@@ -44,8 +64,8 @@ export function ScannerScreen() {
       {!configured && <Notice>Connect Bring and choose a shopping list in Settings.</Notice>}
       {!!error && <Notice>{error}</Notice>}{!!message && <Notice kind="success">{message}</Notice>}
       {!permission.granted ? <Section footer="Camera access is used only to read product barcodes."><ActionButton title="Allow Camera Access" onPress={requestPermission} /></Section> :
-        <View style={styles.cameraWrap}>
-          <CameraView style={styles.camera} facing="back" active={!product} barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }} onBarcodeScanned={scanning ? ({ data }) => handleBarcode(data) : undefined} />
+        <View style={styles.cameraWrap} onLayout={({ nativeEvent }) => { scanTarget.current = { x: nativeEvent.layout.width / 2, y: nativeEvent.layout.height / 2 }; }}>
+          <CameraView style={styles.camera} facing="back" active={!product} barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }} onBarcodeScanned={scanning ? collectCandidate : undefined} />
           <View pointerEvents="none" style={styles.scrimTop}><Text style={styles.guidance}>Align the barcode inside the frame</Text></View>
           <View pointerEvents="none" style={styles.frame} />
           {busy && <View style={styles.loading}><ActivityIndicator size="large" color="#FFFFFF" /><Text style={styles.loadingText}>Looking Up…</Text></View>}
