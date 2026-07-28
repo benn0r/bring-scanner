@@ -10,7 +10,12 @@ describe('app translations', () => {
       'pt',
       'pt-BR',
     ]);
-    for (const { value } of APP_LANGUAGES) expect(translate(value, 'scan')).not.toBe('');
+    for (const { value } of APP_LANGUAGES) {
+      expect(translate(value, 'scan')).not.toBe('');
+      expect(translate(value, 'customBarcodes')).not.toBe('');
+      expect(translate(value, 'manage')).not.toBe('');
+      expect(translate(value, 'done')).not.toBe('');
+    }
     expect(translate('de', 'selected', { name: 'Mondbasis' })).toBe('„Mondbasis“ ausgewählt.');
     expect(translate('pt-BR', 'languageSaved', { language: 'Português (Brasil)' })).toContain(
       'Português (Brasil)',

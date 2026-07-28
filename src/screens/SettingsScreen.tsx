@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ActionButton,
@@ -54,6 +54,7 @@ export function SettingsScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [customBarcodesVisible, setCustomBarcodesVisible] = useState(false);
   useEffect(() => {
     Promise.all([
       loadCredentials(),
@@ -110,6 +111,16 @@ export function SettingsScreen() {
     setLabel('');
     setError('');
     setSuccess(t('customSaved'));
+  }
+  function openCustomBarcodes() {
+    setError('');
+    setSuccess('');
+    setCustomBarcodesVisible(true);
+  }
+  function closeCustomBarcodes() {
+    setError('');
+    setSuccess('');
+    setCustomBarcodesVisible(false);
   }
   function removeCustom(value: string) {
     Alert.alert(t('removeCustomTitle'), t('removeCustomBody'), [
@@ -262,46 +273,14 @@ export function SettingsScreen() {
             );
           })}
         </Section>
-        <Section title={t('addCustomBarcode')} footer={t('customFooter')}>
-          <Field
-            label={t('barcode')}
-            value={barcode}
-            onChangeText={setBarcode}
-            keyboardType="number-pad"
-            placeholder="7612345678901"
+        <Section>
+          <ListRow
+            title={t('customBarcodes')}
+            detail={t('customFooter')}
+            onPress={openCustomBarcodes}
+            trailing={<Text style={styles.open}>{t('manage')}</Text>}
           />
-          <Separator />
-          <Field
-            label={t('bringLabel')}
-            value={label}
-            onChangeText={setLabel}
-            placeholder={t('productName')}
-          />
-          <Separator />
-          <ActionButton title={t('saveCustom')} onPress={addCustom} />
         </Section>
-        {custom.length > 0 && (
-          <Section title={t('savedBarcodes')}>
-            {custom.map((item, index) => (
-              <View key={item.barcode}>
-                {index > 0 ? <Separator /> : null}
-                <ListRow
-                  title={item.label}
-                  detail={item.barcode}
-                  trailing={
-                    <Pressable
-                      accessibilityRole="button"
-                      hitSlop={10}
-                      onPress={() => removeCustom(item.barcode)}
-                    >
-                      <Text style={styles.delete}>{t('delete')}</Text>
-                    </Pressable>
-                  }
-                />
-              </View>
-            ))}
-          </Section>
-        )}
         <Section title={t('productDatabases')} footer={t('databaseFooter')}>
           {PRODUCT_DATABASES.map((database, index) => {
             const description = t(
@@ -329,12 +308,115 @@ export function SettingsScreen() {
         </Section>
         <Text style={styles.disclaimer}>{t('disclaimer')}</Text>
       </ScrollView>
+      <Modal
+        visible={customBarcodesVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={closeCustomBarcodes}
+      >
+        <SafeAreaView edges={['top', 'bottom']} style={styles.modalSafe}>
+          <View style={styles.modalHeader}>
+            <View style={styles.modalButtonSpacer} />
+            <Text accessibilityRole="header" style={styles.modalTitle}>
+              {t('customBarcodes')}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('done')}
+              hitSlop={8}
+              onPress={closeCustomBarcodes}
+              style={styles.modalButton}
+            >
+              <Text style={styles.done}>{t('done')}</Text>
+            </Pressable>
+          </View>
+          <ScrollView
+            style={ui.screen}
+            contentContainerStyle={styles.modalContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <Section title={t('addCustomBarcode')} footer={t('customFooter')}>
+              <Field
+                label={t('barcode')}
+                value={barcode}
+                onChangeText={setBarcode}
+                keyboardType="number-pad"
+                placeholder="7612345678901"
+              />
+              <Separator />
+              <Field
+                label={t('bringLabel')}
+                value={label}
+                onChangeText={setLabel}
+                placeholder={t('productName')}
+              />
+              <Separator />
+              <ActionButton title={t('saveCustom')} onPress={addCustom} />
+            </Section>
+            {custom.length > 0 && (
+              <Section title={t('savedBarcodes')}>
+                {custom.map((item, index) => (
+                  <View key={item.barcode}>
+                    {index > 0 ? <Separator /> : null}
+                    <ListRow
+                      title={item.label}
+                      detail={item.barcode}
+                      trailing={
+                        <Pressable
+                          accessibilityRole="button"
+                          hitSlop={10}
+                          onPress={() => removeCustom(item.barcode)}
+                        >
+                          <Text style={styles.delete}>{t('delete')}</Text>
+                        </Pressable>
+                      }
+                    />
+                  </View>
+                ))}
+              </Section>
+            )}
+          </ScrollView>
+          {(error || success) && (
+            <View pointerEvents="none" style={styles.modalStatus}>
+              {error ? <Notice>{error}</Notice> : <Notice kind="success">{success}</Notice>}
+            </View>
+          )}
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   statusSlot: { position: 'absolute', zIndex: 10, bottom: 12, left: 16, right: 16 },
+  modalSafe: { flex: 1, backgroundColor: colors.systemGroupedBackground },
+  modalHeader: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.separator,
+    backgroundColor: colors.bar,
+  },
+  modalTitle: {
+    flex: 1,
+    color: colors.label,
+    fontSize: 17,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  modalButton: {
+    width: 74,
+    minHeight: 44,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    paddingRight: 16,
+  },
+  modalButtonSpacer: { width: 74 },
+  modalContent: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: 28, gap: 18 },
+  modalStatus: { position: 'absolute', zIndex: 10, bottom: 12, left: 16, right: 16 },
+  done: { color: colors.tint, fontSize: 17, fontWeight: '600' },
   open: { color: colors.tint, fontSize: 15, fontWeight: '500' },
   delete: { color: colors.destructive, fontSize: 15 },
   disclaimer: {
