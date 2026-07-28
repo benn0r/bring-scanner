@@ -1,12 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { BringList, Credentials, CustomBarcode, LookupPreferences, Product, ScanHistoryItem } from '../types';
+import { AppLanguage, BringList, Credentials, CustomBarcode, LookupPreferences, Product, ScanHistoryItem } from '../types';
 
 const CREDENTIALS_KEY = 'bring-credentials';
 const LIST_KEY = 'selected-list';
 const BARCODES_KEY = 'custom-barcodes';
 const LOOKUP_PREFERENCES_KEY = 'lookup-preferences';
 const SCAN_HISTORY_KEY = 'scan-history';
+const APP_LANGUAGE_KEY = 'app-language';
 const MAX_SCAN_HISTORY = 8;
 export const DEFAULT_LOOKUP_PREFERENCES: LookupPreferences = { language: 'auto', labelStyle: 'generic' };
 
@@ -44,3 +45,5 @@ export async function recordScannedProduct(product: Product): Promise<ScanHistor
   await AsyncStorage.setItem(SCAN_HISTORY_KEY, JSON.stringify(next));
   return next;
 }
+export async function loadAppLanguage(): Promise<AppLanguage> { return (await AsyncStorage.getItem(APP_LANGUAGE_KEY) as AppLanguage | null) || 'en'; }
+export async function saveAppLanguage(language: AppLanguage) { await AsyncStorage.setItem(APP_LANGUAGE_KEY, language); }

@@ -9,6 +9,7 @@ import { lookupProduct } from '../services/productLookup';
 import { loadCredentials, loadCustomBarcodes, loadLookupPreferences, loadScanHistory, loadSelectedList, recordScannedProduct } from '../services/storage';
 import { Product, ScanHistoryItem } from '../types';
 import { keepBestGeometry, selectInScanRegion } from '../services/barcodeSelection';
+import { useI18n } from '../i18n';
 
 const CANDIDATE_WINDOW_MS = 650;
 const FRAME_SIDE = 28;
@@ -16,6 +17,7 @@ const FRAME_TOP = 154;
 const FRAME_HEIGHT = 122;
 
 export function ScannerScreen() {
+  const { t } = useI18n();
   const [permission, requestPermission] = useCameraPermissions();
   const [configured, setConfigured] = useState(false);
   const [scanning, setScanning] = useState(true);
@@ -51,64 +53,65 @@ export function ScannerScreen() {
   async function handleBarcode(value: string) {
     if (!scanning || busy) return;
     setScanning(false); setBusy(true); setError(''); setMessage('');
-    try { const [customBarcodes, preferences] = await Promise.all([loadCustomBarcodes(), loadLookupPreferences()]); const found = await lookupProduct(value, customBarcodes, preferences); if (!found) throw new Error('Product not found. Add a custom label in Settings and scan again.'); setHistory(await recordScannedProduct(found)); setProduct(found); }
-    catch (e) { scanLocked.current = false; setError(e instanceof Error ? e.message : 'Product lookup failed.'); setScanning(true); }
+    try { const [customBarcodes, preferences] = await Promise.all([loadCustomBarcodes(), loadLookupPreferences()]); const found = await lookupProduct(value, customBarcodes, preferences); if (!found) throw new Error(t('productNotFound')); setHistory(await recordScannedProduct(found)); setProduct(found); }
+    catch (e) { scanLocked.current = false; setError(e instanceof Error ? e.message : t('lookupFailed')); setScanning(true); }
     finally { setBusy(false); }
   }
 
   async function submit(label: string, quantity?: number) {
     if (!product) return;
     setBusy(true); setError('');
-    try { const [credentials, list] = await Promise.all([loadCredentials(), loadSelectedList()]); if (!credentials || !list) throw new Error('Configure your Bring account and shopping list first.'); await addItem(credentials, list.listUuid, label, quantity); setMessage(`${quantity ? `${quantity}× ` : ''}${label} added to ${list.name}.`); setProduct(null); }
-    catch (e) { setError(e instanceof Error ? e.message : 'Could not add the item.'); }
+    try { const [credentials, list] = await Promise.all([loadCredentials(), loadSelectedList()]); if (!credentials || !list) throw new Error(t('configureFirst')); await addItem(credentials, list.listUuid, label, quantity); setMessage(t('addedTo', { quantity: quantity ? `${quantity}× ` : '', label, list: list.name })); setProduct(null); }
+    catch (e) { setError(e instanceof Error ? e.message : t('addFailed')); }
     finally { setBusy(false); }
   }
 
   if (!permission) return <SafeAreaView edges={['top']} style={ui.safe} />;
   return <SafeAreaView edges={['top']} style={ui.safe}>
-    <View style={ui.header}><LargeTitle>Scan</LargeTitle></View>
+    <View style={ui.header}><LargeTitle>{t('scan')}</LargeTitle></View>
     <View style={[ui.screen, ui.content, styles.scannerContent]}>
-      {!permission.granted ? <Section footer="Camera access is used only to read product barcodes."><ActionButton title="Allow Camera Access" onPress={requestPermission} /></Section> :
+      {!permission.granted ? <Section footer={t('cameraAccess')}><ActionButton title={t('allowCamera')} onPress={requestPermission} /></Section> :
         <View style={scannerLayoutStyles.cameraStack}>
           <View style={styles.cameraWrap} onLayout={({ nativeEvent }) => { const { width } = nativeEvent.layout; scanRegion.current = { left: FRAME_SIDE, top: FRAME_TOP, right: width - FRAME_SIDE, bottom: FRAME_TOP + FRAME_HEIGHT }; scanTarget.current = { x: width / 2, y: FRAME_TOP + FRAME_HEIGHT / 2 }; }}>
             <CameraView style={styles.camera} facing="back" active={!product} barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }} onBarcodeScanned={scanning ? collectCandidate : undefined} />
-            <View pointerEvents="none" style={styles.scrimTop}><Text style={styles.guidance}>Align the barcode inside the frame</Text></View>
+            <View pointerEvents="none" style={styles.scrimTop}><Text style={styles.guidance}>{t('alignBarcode')}</Text></View>
             <View pointerEvents="none" style={styles.frame} />
-            {busy && <View style={styles.loading}><ActivityIndicator size="large" color="#FFFFFF" /><Text style={styles.loadingText}>Looking Up…</Text></View>}
+            {busy && <View style={styles.loading}><ActivityIndicator size="large" color="#FFFFFF" /><Text style={styles.loadingText}>{t('lookingUp')}</Text></View>}
           </View>
         </View>}
-      <Text style={styles.help}>EAN-8, EAN-13, UPC-A and UPC-E are supported.</Text>
-      <View style={historyStyles.history}>{history.length > 0 && <><Text style={historyStyles.title}>RECENT SCANS</Text><ScrollView horizontal bounces={false} showsHorizontalScrollIndicator={false} contentContainerStyle={historyStyles.list}>{history.map((item) => <View key={item.barcode} style={historyStyles.card}><Text numberOfLines={1} style={historyStyles.label}>{item.label}</Text><Text numberOfLines={1} style={historyStyles.detail}>{item.brand || item.barcode}</Text></View>)}</ScrollView></>}</View>
+      <Text style={styles.help}>{t('supportedCodes')}</Text>
+      <View style={historyStyles.history}>{history.length > 0 && <><Text style={historyStyles.title}>{t('recentScans')}</Text><ScrollView horizontal bounces={false} showsHorizontalScrollIndicator={false} contentContainerStyle={historyStyles.list}>{history.map((item) => <View key={item.barcode} style={historyStyles.card}><Text numberOfLines={1} style={historyStyles.label}>{item.label}</Text><Text numberOfLines={1} style={historyStyles.detail}>{item.brand || item.barcode}</Text></View>)}</ScrollView></>}</View>
     </View>
-    {(error || message || !configured) && <View pointerEvents="none" style={statusStyles.popover}>{error ? <Notice>{error}</Notice> : message ? <Notice kind="success">{message}</Notice> : <Notice>Connect Bring and choose a shopping list in Settings.</Notice>}</View>}
+    {(error || message || !configured) && <View pointerEvents="none" style={statusStyles.popover}>{error ? <Notice>{error}</Notice> : message ? <Notice kind="success">{message}</Notice> : <Notice>{t('connectNotice')}</Notice>}</View>}
     <ProductSheet product={product} busy={busy} configured={configured} onAdd={submit} onClose={() => setProduct(null)} />
   </SafeAreaView>;
 }
 
 function ProductSheet({ product, busy, configured, onAdd, onClose }: { product: Product | null; busy: boolean; configured: boolean; onAdd: (label: string, quantity?: number) => void; onClose: () => void }) {
+  const { t } = useI18n();
   const [label, setLabel] = useState('');
   const [quantity, setQuantity] = useState('');
   useEffect(() => { setLabel(product?.label || ''); setQuantity(''); }, [product]);
   return <Modal visible={Boolean(product)} animationType="slide" presentationStyle="overFullScreen" transparent onRequestClose={onClose}>
     <View style={modalStyles.backdrop}>
     <SafeAreaView edges={['bottom']} style={[styles.sheetSafe, modalStyles.sheet]}>
-      <View style={styles.sheetBar}><Pressable accessibilityRole="button" onPress={onClose} hitSlop={8} style={productHeaderStyles.cancelButton}><Text style={styles.cancel}>Cancel</Text></Pressable><Text style={styles.sheetTitle}>Add Item</Text><View style={productHeaderStyles.barSpacer} /></View>
+      <View style={styles.sheetBar}><Pressable accessibilityRole="button" onPress={onClose} hitSlop={8} style={productHeaderStyles.cancelButton}><Text style={styles.cancel}>{t('cancel')}</Text></Pressable><Text style={styles.sheetTitle}>{t('addItem')}</Text><View style={productHeaderStyles.barSpacer} /></View>
       {product && <ScrollView contentContainerStyle={styles.sheetContent}>
         {product.imageUrl ? <Image source={{ uri: product.imageUrl }} style={styles.image} resizeMode="contain" /> : <View style={styles.productIcon}><Text style={styles.productIconText}>▦</Text></View>}
         <Text style={styles.product}>{product.exactLabel}</Text>{product.brand ? <Text style={[ui.muted, productHeaderStyles.brand]}>{product.brand}</Text> : null}
-        <Section title="Bring Label"><TextInput value={label} onChangeText={setLabel} style={styles.labelInput} placeholder="Shopping list label" placeholderTextColor={colors.tertiaryLabel} selectionColor={colors.tint} /></Section>
-        <Section title="Quantity"><View style={quantityStyles.row}><Pressable accessibilityRole="button" accessibilityLabel="Decrease quantity" disabled={!quantity} onPress={() => setQuantity((value) => { const next = Number(value) - 1; return next > 0 ? String(next) : ''; })} style={({ pressed }) => [quantityStyles.button, (pressed || !quantity) && quantityStyles.disabled]}><Text style={quantityStyles.symbol}>−</Text></Pressable><TextInput accessibilityLabel="Quantity" value={quantity} placeholder="—" placeholderTextColor={colors.tertiaryLabel} onChangeText={(value) => { const digits = value.replace(/\D/g, ''); setQuantity(digits ? String(Math.min(99, Number(digits))) : ''); }} keyboardType="number-pad" selectTextOnFocus style={quantityStyles.input} selectionColor={colors.tint} /><Pressable accessibilityRole="button" accessibilityLabel="Increase quantity" disabled={Number(quantity) >= 99} onPress={() => setQuantity((value) => String(Math.min(99, (Number(value) || 0) + 1)))} style={({ pressed }) => [quantityStyles.button, (pressed || Number(quantity) >= 99) && quantityStyles.disabled]}><Text style={quantityStyles.symbol}>+</Text></Pressable></View></Section>
-        <Section><View style={styles.detailRow}><Text style={styles.detailLabel}>Barcode</Text><Text style={styles.detailValue}>{product.barcode}</Text></View><Separator /><View style={styles.detailRow}><Text style={styles.detailLabel}>Source</Text><Text style={styles.detailValue}>{sourceName(product)}</Text></View></Section>
-        <View style={styles.primaryWrap}><Pressable accessibilityRole="button" disabled={busy || !configured || !label.trim()} onPress={() => onAdd(label.trim(), quantity ? Number(quantity) : undefined)} style={({ pressed }) => [styles.primary, (pressed || busy || !configured || !label.trim()) && styles.primaryDisabled]}>{busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryText}>Add to Bring</Text>}</Pressable></View>
-        {!configured && <Text style={styles.sheetHelp}>Configure a shopping list in Settings before adding this item.</Text>}
+        <Section title={t('bringLabel')}><TextInput value={label} onChangeText={setLabel} style={styles.labelInput} placeholder={t('shoppingListLabel')} placeholderTextColor={colors.tertiaryLabel} selectionColor={colors.tint} /></Section>
+        <Section title={t('quantity')}><View style={quantityStyles.row}><Pressable accessibilityRole="button" accessibilityLabel={t('decreaseQuantity')} disabled={!quantity} onPress={() => setQuantity((value) => { const next = Number(value) - 1; return next > 0 ? String(next) : ''; })} style={({ pressed }) => [quantityStyles.button, (pressed || !quantity) && quantityStyles.disabled]}><Text style={quantityStyles.symbol}>−</Text></Pressable><TextInput accessibilityLabel={t('quantity')} value={quantity} placeholder="—" placeholderTextColor={colors.tertiaryLabel} onChangeText={(value) => { const digits = value.replace(/\D/g, ''); setQuantity(digits ? String(Math.min(99, Number(digits))) : ''); }} keyboardType="number-pad" selectTextOnFocus style={quantityStyles.input} selectionColor={colors.tint} /><Pressable accessibilityRole="button" accessibilityLabel={t('increaseQuantity')} disabled={Number(quantity) >= 99} onPress={() => setQuantity((value) => String(Math.min(99, (Number(value) || 0) + 1)))} style={({ pressed }) => [quantityStyles.button, (pressed || Number(quantity) >= 99) && quantityStyles.disabled]}><Text style={quantityStyles.symbol}>+</Text></Pressable></View></Section>
+        <Section><View style={styles.detailRow}><Text style={styles.detailLabel}>{t('barcode')}</Text><Text style={styles.detailValue}>{product.barcode}</Text></View><Separator /><View style={styles.detailRow}><Text style={styles.detailLabel}>{t('source')}</Text><Text style={styles.detailValue}>{sourceName(product, t('customLabel'))}</Text></View></Section>
+        <View style={styles.primaryWrap}><Pressable accessibilityRole="button" disabled={busy || !configured || !label.trim()} onPress={() => onAdd(label.trim(), quantity ? Number(quantity) : undefined)} style={({ pressed }) => [styles.primary, (pressed || busy || !configured || !label.trim()) && styles.primaryDisabled]}>{busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryText}>{t('addToBring')}</Text>}</Pressable></View>
+        {!configured && <Text style={styles.sheetHelp}>{t('configureBeforeAdding')}</Text>}
       </ScrollView>}
     </SafeAreaView>
     </View>
   </Modal>;
 }
 
-function sourceName(product: Product) {
-  if (product.source === 'custom') return 'Custom label';
+function sourceName(product: Product, customLabel: string) {
+  if (product.source === 'custom') return customLabel;
   return ({ food: 'Open Food Facts', product: 'Open Products Facts', beauty: 'Open Beauty Facts', petfood: 'Open Pet Food Facts' } as const)[product.productType || 'product'];
 }
 

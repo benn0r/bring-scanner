@@ -6,11 +6,13 @@ import { loadLists } from '../services/bringApi';
 import { DEFAULT_LOOKUP_PREFERENCES, loadCredentials, loadCustomBarcodes, loadLookupPreferences, loadSelectedList, saveCredentials, saveCustomBarcodes, saveLookupPreferences, saveSelectedList } from '../services/storage';
 import { BringList, CustomBarcode, LabelStyle, LookupPreferences, ProductLanguage } from '../types';
 import { PRODUCT_DATABASES } from '../productDatabases';
+import { APP_LANGUAGES, translate, useI18n } from '../i18n';
 
 const LANGUAGES: Array<{ value: ProductLanguage; title: string }> = [{ value: 'auto', title: 'Automatic' }, { value: 'de', title: 'German' }, { value: 'en', title: 'English' }, { value: 'fr', title: 'French' }, { value: 'it', title: 'Italian' }];
 const LABEL_STYLES: Array<{ value: LabelStyle; title: string; detail: string }> = [{ value: 'generic', title: 'Generic', detail: 'Toilet paper' }, { value: 'exact', title: 'Exact Product', detail: 'Brand, variant and quantity' }, { value: 'ask', title: 'Ask Every Time', detail: 'Start with the exact name and edit it' }];
 
 export function SettingsScreen() {
+  const { language: appLanguage, setLanguage: setAppLanguage, t } = useI18n();
   const [email, setEmail] = useState(''); const [password, setPassword] = useState('');
   const [lists, setLists] = useState<BringList[]>([]); const [selected, setSelected] = useState<BringList | null>(null);
   const [barcode, setBarcode] = useState(''); const [label, setLabel] = useState(''); const [custom, setCustom] = useState<CustomBarcode[]>([]);
@@ -19,45 +21,46 @@ export function SettingsScreen() {
   useEffect(() => { Promise.all([loadCredentials(), loadSelectedList(), loadCustomBarcodes(), loadLookupPreferences()]).then(([c, l, b, p]) => { if (c) { setEmail(c.email); setPassword(c.password); } setSelected(l); setCustom(b); setPreferences(p); }); }, []);
   useEffect(() => { if (!success) return; const timer = setTimeout(() => setSuccess(''), 3000); return () => clearTimeout(timer); }, [success]);
 
-  async function connect() { if (!email.trim() || !password) return setError('Enter your Bring email and password.'); setBusy(true); setError(''); setSuccess(''); try { const result = await loadLists({ email, password }); await saveCredentials({ email: email.trim(), password }); setLists(result); setSuccess('Connected. Choose a shopping list below.'); } catch (e) { setError(e instanceof Error ? e.message : 'Connection failed.'); } finally { setBusy(false); } }
-  async function choose(list: BringList) { await saveSelectedList(list); setSelected(list); setSuccess(`${list.name} selected.`); }
-  async function addCustom() { const clean = barcode.replace(/\D/g, ''); if (!/^\d{8,14}$/.test(clean) || !label.trim()) return setError('Enter an 8–14 digit barcode and a label.'); const next = [...custom.filter((item) => item.barcode !== clean), { barcode: clean, label: label.trim() }]; await saveCustomBarcodes(next); setCustom(next); setBarcode(''); setLabel(''); setError(''); setSuccess('Custom barcode saved.'); }
-  function removeCustom(value: string) { Alert.alert('Remove Custom Barcode?', 'The online lookup will be used the next time this barcode is scanned.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Remove', style: 'destructive', onPress: async () => { const next = custom.filter((item) => item.barcode !== value); await saveCustomBarcodes(next); setCustom(next); setError(''); setSuccess('Custom barcode removed.'); } }]); }
+  async function connect() { if (!email.trim() || !password) return setError(t('enterCredentials')); setBusy(true); setError(''); setSuccess(''); try { const result = await loadLists({ email, password }); await saveCredentials({ email: email.trim(), password }); setLists(result); setSuccess(t('connectedChoose')); } catch (e) { setError(e instanceof Error ? e.message : t('addFailed')); } finally { setBusy(false); } }
+  async function choose(list: BringList) { await saveSelectedList(list); setSelected(list); setSuccess(t('selected', { name: list.name })); }
+  async function addCustom() { const clean = barcode.replace(/\D/g, ''); if (!/^\d{8,14}$/.test(clean) || !label.trim()) return setError(t('invalidCustom')); const next = [...custom.filter((item) => item.barcode !== clean), { barcode: clean, label: label.trim() }]; await saveCustomBarcodes(next); setCustom(next); setBarcode(''); setLabel(''); setError(''); setSuccess(t('customSaved')); }
+  function removeCustom(value: string) { Alert.alert(t('removeCustomTitle'), t('removeCustomBody'), [{ text: t('cancel'), style: 'cancel' }, { text: t('remove'), style: 'destructive', onPress: async () => { const next = custom.filter((item) => item.barcode !== value); await saveCustomBarcodes(next); setCustom(next); setError(''); setSuccess(t('customRemoved')); } }]); }
   async function updatePreferences(update: Partial<LookupPreferences>, confirmation: string) { const next = { ...preferences, ...update }; setPreferences(next); await saveLookupPreferences(next); setError(''); setSuccess(confirmation); }
 
   return <SafeAreaView edges={['top']} style={ui.safe}>
-    <View style={ui.header}><LargeTitle>Settings</LargeTitle></View>
+    <View style={ui.header}><LargeTitle>{t('settings')}</LargeTitle></View>
     {(error || success) && <View pointerEvents="none" style={styles.statusSlot}>{error ? <Notice>{error}</Notice> : <Notice kind="success">{success}</Notice>}</View>}
     <ScrollView style={ui.screen} contentContainerStyle={ui.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-      <Section title="Bring Account" footer="Your password is kept in the iOS Keychain and is never stored in regular app data.">
-        <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" textContentType="username" placeholder="you@example.com" />
+      <Section title={t('appLanguage')}>{APP_LANGUAGES.map((option, index) => <View key={option.value}>{index > 0 ? <Separator /> : null}<ListRow title={option.name} selected={appLanguage === option.value} onPress={async () => { await setAppLanguage(option.value); setSuccess(translate(option.value, 'languageSaved', { language: option.name })); }} /></View>)}</Section>
+      <Section title={t('bringAccount')} footer={t('accountFooter')}>
+        <Field label={t('email')} value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" textContentType="username" placeholder="you@example.com" />
         <Separator />
-        <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry textContentType="password" placeholder="Required" />
+        <Field label={t('password')} value={password} onChangeText={setPassword} secureTextEntry textContentType="password" placeholder={t('required')} />
         <Separator />
-        <ActionButton title="Connect & Load Lists" onPress={connect} loading={busy} />
+        <ActionButton title={t('connectLoad')} onPress={connect} loading={busy} />
       </Section>
-      {(lists.length > 0 || selected) && <Section title="Shopping List" footer="Scanned products are added to the selected list.">
+      {(lists.length > 0 || selected) && <Section title={t('shoppingList')} footer={t('listFooter')}>
         {selected && !lists.some((l) => l.listUuid === selected.listUuid) && <ListRow title={selected.name} selected />}
         {lists.map((list, index) => <View key={list.listUuid}>{index > 0 || (selected && !lists.some((l) => l.listUuid === selected.listUuid)) ? <Separator /> : null}<ListRow title={list.name} selected={selected?.listUuid === list.listUuid} onPress={() => choose(list)} /></View>)}
       </Section>}
-      <Section title="Product Language" footer="Automatic follows the iPhone language. English is used before falling back to the contributor's original name.">
-        {LANGUAGES.map((language, index) => <View key={language.value}>{index > 0 ? <Separator /> : null}<ListRow title={language.title} selected={preferences.language === language.value} onPress={() => updatePreferences({ language: language.value }, `Product language set to ${language.title}.`)} /></View>)}
+      <Section title={t('productLanguage')} footer={t('productLanguageFooter')}>
+        {LANGUAGES.map((option, index) => { const key = ({ auto:'automatic', de:'german', en:'english', fr:'french', it:'italian' } as const)[option.value]; const title = t(key); return <View key={option.value}>{index > 0 ? <Separator /> : null}<ListRow title={title} selected={preferences.language === option.value} onPress={() => updatePreferences({ language: option.value }, t('languageSet', { language: title }))} /></View>; })}
       </Section>
-      <Section title="Bring Item Label" footer="The label is always editable before the item is added.">
-        {LABEL_STYLES.map((style, index) => <View key={style.value}>{index > 0 ? <Separator /> : null}<ListRow title={style.title} detail={style.detail} selected={preferences.labelStyle === style.value} onPress={() => updatePreferences({ labelStyle: style.value }, `Bring item label set to ${style.title}.`)} /></View>)}
+      <Section title={t('bringItemLabel')} footer={t('labelFooter')}>
+        {LABEL_STYLES.map((style, index) => { const keys = ({ generic:['generic','genericExample'], exact:['exactProduct','exactDetail'], ask:['askEveryTime','askDetail'] } as const)[style.value]; const title = t(keys[0]); return <View key={style.value}>{index > 0 ? <Separator /> : null}<ListRow title={title} detail={t(keys[1])} selected={preferences.labelStyle === style.value} onPress={() => updatePreferences({ labelStyle: style.value }, t('labelSet', { style: title }))} /></View>; })}
       </Section>
-      <Section title="Add Custom Barcode" footer="Custom labels take priority over Open Food Facts results.">
-        <Field label="Barcode" value={barcode} onChangeText={setBarcode} keyboardType="number-pad" placeholder="7612345678901" />
+      <Section title={t('addCustomBarcode')} footer={t('customFooter')}>
+        <Field label={t('barcode')} value={barcode} onChangeText={setBarcode} keyboardType="number-pad" placeholder="7612345678901" />
         <Separator />
-        <Field label="Label" value={label} onChangeText={setLabel} placeholder="Product name" />
+        <Field label={t('bringLabel')} value={label} onChangeText={setLabel} placeholder={t('productName')} />
         <Separator />
-        <ActionButton title="Save Custom Barcode" onPress={addCustom} />
+        <ActionButton title={t('saveCustom')} onPress={addCustom} />
       </Section>
-      {custom.length > 0 && <Section title="Saved Barcodes">{custom.map((item, index) => <View key={item.barcode}>{index > 0 ? <Separator /> : null}<ListRow title={item.label} detail={item.barcode} trailing={<Pressable accessibilityRole="button" hitSlop={10} onPress={() => removeCustom(item.barcode)}><Text style={styles.delete}>Delete</Text></Pressable>} /></View>)}</Section>}
-      <Section title="Product Databases" footer="Product information is community-contributed open data. Tap a database to browse or improve its entries.">
-        {PRODUCT_DATABASES.map((database, index) => <View key={database.url}>{index > 0 ? <Separator /> : null}<ListRow title={database.name} detail={database.description} onPress={() => Linking.openURL(database.url)} trailing={<Text style={styles.open}>Open ↗</Text>} /></View>)}
+      {custom.length > 0 && <Section title={t('savedBarcodes')}>{custom.map((item, index) => <View key={item.barcode}>{index > 0 ? <Separator /> : null}<ListRow title={item.label} detail={item.barcode} trailing={<Pressable accessibilityRole="button" hitSlop={10} onPress={() => removeCustom(item.barcode)}><Text style={styles.delete}>{t('delete')}</Text></Pressable>} /></View>)}</Section>}
+      <Section title={t('productDatabases')} footer={t('databaseFooter')}>
+        {PRODUCT_DATABASES.map((database, index) => { const description = t(({ 'Open Food Facts':'foodDb', 'Open Products Facts':'productsDb', 'Open Beauty Facts':'beautyDb', 'Open Pet Food Facts':'petDb' } as const)[database.name]); return <View key={database.url}>{index > 0 ? <Separator /> : null}<ListRow title={database.name} detail={description} onPress={() => Linking.openURL(database.url)} trailing={<Text style={styles.open}>{t('open')}</Text>} /></View>; })}
       </Section>
-      <Text style={styles.disclaimer}>This companion is not affiliated with Bring! Labs AG. Product data © Open Food Facts contributors (ODbL).</Text>
+      <Text style={styles.disclaimer}>{t('disclaimer')}</Text>
     </ScrollView>
   </SafeAreaView>;
 }
