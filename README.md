@@ -5,7 +5,18 @@
 
 An unofficial React Native iOS companion that scans EAN/UPC barcodes, resolves product names, and adds them to a selected Bring shopping list.
 
-![Bring Scanner with fantasy product data](docs/screenshot.svg)
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshot.svg" alt="Centered barcode scanner" width="260"><br><sub>Centered barcode scanner and recent history</sub></td>
+    <td align="center"><img src="docs/screenshots/product-sheet.svg" alt="Product confirmation sheet" width="260"><br><sub>Edit the Bring label and quantity before adding</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/settings.svg" alt="Apple-style settings" width="260"><br><sub>Language, account, and shopping-list settings</sub></td>
+    <td align="center"><img src="docs/screenshots/custom-barcodes.svg" alt="Custom barcode modal" width="260"><br><sub>Add and manage custom barcode labels</sub></td>
+  </tr>
+</table>
 
 ## Features
 
@@ -17,7 +28,7 @@ An unofficial React Native iOS companion that scans EAN/UPC barcodes, resolves p
 - Custom barcode-to-label mappings that override online results
 - Bring credential entry and shopping-list selection
 - Keychain-backed credential storage with `expo-secure-store`
-- Confirmation before an item is added, including the EAN as its specification
+- Confirmation before an item is added, with an optional quantity
 
 ## Run locally
 

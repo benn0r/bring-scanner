@@ -7,4 +7,5 @@ android
 package-lock.json
 assets
 docs/screenshot.svg
+docs/screenshots/*.svg
 *.tgz
