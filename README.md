@@ -11,6 +11,9 @@ An unofficial React Native iOS companion that scans EAN/UPC barcodes, resolves p
 
 - EAN-8, EAN-13, UPC-A, and UPC-E scanning with the device camera
 - Free product lookup through Open Food Facts
+- Household, beauty, and pet-product lookup through the Open Facts product family
+- Automatic or selected product language with localized-name fallback
+- Generic, exact, or ask-every-time Bring item labels
 - Custom barcode-to-label mappings that override online results
 - Bring credential entry and shopping-list selection
 - Keychain-backed credential storage with `expo-secure-store`
