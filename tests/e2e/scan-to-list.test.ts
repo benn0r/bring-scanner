@@ -9,8 +9,9 @@ it('resolves a scan and sends its custom label to the configured list', async ()
     .mockResolvedValueOnce({ ok: true } as Response);
   const product = await lookupProduct('7612345678901', [{ barcode: '7612345678901', label: 'Comet Coffee' }]);
   expect(product).not.toBeNull();
-  await addItem({ email: 'pilot@example.com', password: 'secret' }, 'list-id', product!.label, product!.barcode);
+  await addItem({ email: 'pilot@example.com', password: 'secret' }, 'list-id', product!.label, 4);
   expect(String((fetchSpy.mock.calls[1][1] as RequestInit).body)).toContain('purchase=Comet+Coffee');
+  expect(new URLSearchParams(String((fetchSpy.mock.calls[1][1] as RequestInit).body)).get('specification')).toBe('4×');
 });
 
 it('resolves a household barcode to a localized generic label and sends it to Bring', async () => {
@@ -20,6 +21,6 @@ it('resolves a household barcode to a localized generic label and sends it to Br
     .mockResolvedValueOnce({ ok: true } as Response);
   const product = await lookupProduct('7612345678901', [], { language: 'de', labelStyle: 'generic' });
   expect(product?.label).toBe('Toilettenpapier');
-  await addItem({ email: 'pilot@example.com', password: 'secret' }, 'list-id', product!.label, product!.barcode);
+  await addItem({ email: 'pilot@example.com', password: 'secret' }, 'list-id', product!.label);
   expect(String((fetchSpy.mock.calls[2][1] as RequestInit).body)).toContain('purchase=Toilettenpapier');
 });

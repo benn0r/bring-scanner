@@ -33,9 +33,9 @@ export async function loadLists(credentials: Credentials): Promise<BringList[]> 
   return (body.lists || []).map((list: any) => ({ listUuid: list.listUuid, name: list.name || 'Shopping list' }));
 }
 
-export async function addItem(credentials: Credentials, listUuid: string, label: string, barcode: string) {
+export async function addItem(credentials: Credentials, listUuid: string, label: string, quantity?: number) {
   const session = await login(credentials);
-  const body = new URLSearchParams({ purchase: label, recently: '', specification: `EAN ${barcode}`, remove: '', sender: 'null' });
+  const body = new URLSearchParams({ purchase: label, recently: '', specification: quantity ? `${quantity}×` : '', remove: '', sender: 'null' });
   const response = await fetch(`${API_URL}bringlists/${encodeURIComponent(listUuid)}`, { method: 'PUT', headers: { ...headers(session), 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, body: body.toString() });
   if (!response.ok) throw new Error('Bring did not accept the item. Please try again.');
 }

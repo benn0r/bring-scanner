@@ -56,10 +56,10 @@ export function ScannerScreen() {
     finally { setBusy(false); }
   }
 
-  async function submit(label: string) {
+  async function submit(label: string, quantity?: number) {
     if (!product) return;
     setBusy(true); setError('');
-    try { const [credentials, list] = await Promise.all([loadCredentials(), loadSelectedList()]); if (!credentials || !list) throw new Error('Configure your Bring account and shopping list first.'); await addItem(credentials, list.listUuid, label, product.barcode); setMessage(`${label} was added to ${list.name}.`); setProduct(null); }
+    try { const [credentials, list] = await Promise.all([loadCredentials(), loadSelectedList()]); if (!credentials || !list) throw new Error('Configure your Bring account and shopping list first.'); await addItem(credentials, list.listUuid, label, quantity); setMessage(`${quantity ? `${quantity}× ` : ''}${label} added to ${list.name}.`); setProduct(null); }
     catch (e) { setError(e instanceof Error ? e.message : 'Could not add the item.'); }
     finally { setBusy(false); }
   }
@@ -85,21 +85,25 @@ export function ScannerScreen() {
   </SafeAreaView>;
 }
 
-function ProductSheet({ product, busy, configured, onAdd, onClose }: { product: Product | null; busy: boolean; configured: boolean; onAdd: (label: string) => void; onClose: () => void }) {
+function ProductSheet({ product, busy, configured, onAdd, onClose }: { product: Product | null; busy: boolean; configured: boolean; onAdd: (label: string, quantity?: number) => void; onClose: () => void }) {
   const [label, setLabel] = useState('');
-  useEffect(() => { setLabel(product?.label || ''); }, [product]);
-  return <Modal visible={Boolean(product)} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-    <SafeAreaView edges={['top', 'bottom']} style={styles.sheetSafe}>
+  const [quantity, setQuantity] = useState('');
+  useEffect(() => { setLabel(product?.label || ''); setQuantity(''); }, [product]);
+  return <Modal visible={Boolean(product)} animationType="slide" presentationStyle="overFullScreen" transparent onRequestClose={onClose}>
+    <View style={modalStyles.backdrop}>
+    <SafeAreaView edges={['bottom']} style={[styles.sheetSafe, modalStyles.sheet]}>
       <View style={styles.sheetBar}><Pressable accessibilityRole="button" onPress={onClose} hitSlop={8} style={productHeaderStyles.cancelButton}><Text style={styles.cancel}>Cancel</Text></Pressable><Text style={styles.sheetTitle}>Add Item</Text><View style={productHeaderStyles.barSpacer} /></View>
       {product && <ScrollView contentContainerStyle={styles.sheetContent}>
         {product.imageUrl ? <Image source={{ uri: product.imageUrl }} style={styles.image} resizeMode="contain" /> : <View style={styles.productIcon}><Text style={styles.productIconText}>▦</Text></View>}
         <Text style={styles.product}>{product.exactLabel}</Text>{product.brand ? <Text style={[ui.muted, productHeaderStyles.brand]}>{product.brand}</Text> : null}
         <Section title="Bring Label"><TextInput value={label} onChangeText={setLabel} style={styles.labelInput} placeholder="Shopping list label" placeholderTextColor={colors.tertiaryLabel} selectionColor={colors.tint} /></Section>
+        <Section title="Quantity"><View style={quantityStyles.row}><Pressable accessibilityRole="button" accessibilityLabel="Decrease quantity" disabled={!quantity} onPress={() => setQuantity((value) => { const next = Number(value) - 1; return next > 0 ? String(next) : ''; })} style={({ pressed }) => [quantityStyles.button, (pressed || !quantity) && quantityStyles.disabled]}><Text style={quantityStyles.symbol}>−</Text></Pressable><TextInput accessibilityLabel="Quantity" value={quantity} placeholder="—" placeholderTextColor={colors.tertiaryLabel} onChangeText={(value) => { const digits = value.replace(/\D/g, ''); setQuantity(digits ? String(Math.min(99, Number(digits))) : ''); }} keyboardType="number-pad" selectTextOnFocus style={quantityStyles.input} selectionColor={colors.tint} /><Pressable accessibilityRole="button" accessibilityLabel="Increase quantity" disabled={Number(quantity) >= 99} onPress={() => setQuantity((value) => String(Math.min(99, (Number(value) || 0) + 1)))} style={({ pressed }) => [quantityStyles.button, (pressed || Number(quantity) >= 99) && quantityStyles.disabled]}><Text style={quantityStyles.symbol}>+</Text></Pressable></View></Section>
         <Section><View style={styles.detailRow}><Text style={styles.detailLabel}>Barcode</Text><Text style={styles.detailValue}>{product.barcode}</Text></View><Separator /><View style={styles.detailRow}><Text style={styles.detailLabel}>Source</Text><Text style={styles.detailValue}>{sourceName(product)}</Text></View></Section>
-        <View style={styles.primaryWrap}><Pressable accessibilityRole="button" disabled={busy || !configured || !label.trim()} onPress={() => onAdd(label.trim())} style={({ pressed }) => [styles.primary, (pressed || busy || !configured || !label.trim()) && styles.primaryDisabled]}>{busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryText}>Add to Bring</Text>}</Pressable></View>
+        <View style={styles.primaryWrap}><Pressable accessibilityRole="button" disabled={busy || !configured || !label.trim()} onPress={() => onAdd(label.trim(), quantity ? Number(quantity) : undefined)} style={({ pressed }) => [styles.primary, (pressed || busy || !configured || !label.trim()) && styles.primaryDisabled]}>{busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryText}>Add to Bring</Text>}</Pressable></View>
         {!configured && <Text style={styles.sheetHelp}>Configure a shopping list in Settings before adding this item.</Text>}
       </ScrollView>}
     </SafeAreaView>
+    </View>
   </Modal>;
 }
 
@@ -112,5 +116,7 @@ const scannerLayoutStyles = StyleSheet.create({ cameraStack: { flex: 1, minHeigh
 const statusStyles = StyleSheet.create({ popover: { position: 'absolute', zIndex: 10, left: 16, right: 16, bottom: 12 } });
 const historyStyles = StyleSheet.create({ history: { height: 83, gap: 7 }, title: { color: colors.secondaryLabel, fontSize: 13, lineHeight: 18, marginLeft: 16 }, list: { gap: 10, paddingRight: 16 }, card: { width: 154, minHeight: 58, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10, backgroundColor: colors.secondaryGroupedBackground, justifyContent: 'center' }, label: { color: colors.label, fontSize: 15, lineHeight: 19, fontWeight: '600' }, detail: { color: colors.secondaryLabel, fontSize: 12, lineHeight: 16, marginTop: 2 } });
 const productHeaderStyles = StyleSheet.create({ brand: { textAlign: 'center', marginTop: -10 }, cancelButton: { width: 72, minHeight: 44, justifyContent: 'center' }, barSpacer: { width: 72 } });
+const quantityStyles = StyleSheet.create({ row: { minHeight: 54, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14 }, button: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.secondarySystemBackground }, disabled: { opacity: 0.35 }, symbol: { color: colors.tint, fontSize: 25, lineHeight: 28, fontWeight: '500' }, input: { width: 62, height: 40, borderRadius: 9, backgroundColor: colors.secondarySystemBackground, color: colors.label, fontSize: 19, fontWeight: '600', textAlign: 'center', paddingVertical: 0 } });
+const modalStyles = StyleSheet.create({ backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.28)' }, sheet: { flex: 0, height: '92%', borderTopLeftRadius: 18, borderTopRightRadius: 18, overflow: 'hidden' } });
 
 const styles = StyleSheet.create({ scannerContent: { flex: 1 }, cameraWrap: { flex: 1, minHeight: 300, maxHeight: 430, borderRadius: 14, overflow: 'hidden', backgroundColor: '#000000', borderWidth: 2, borderColor: colors.brand }, camera: { flex: 1 }, scrimTop: { position: 'absolute', left: 0, right: 0, top: 0, height: 92, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(10,65,60,0.48)' }, guidance: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' }, frame: { position: 'absolute', left: FRAME_SIDE, right: FRAME_SIDE, top: FRAME_TOP, height: FRAME_HEIGHT, borderWidth: 3, borderRadius: 12, borderColor: colors.brand }, loading: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: 'rgba(7,52,48,0.56)' }, loadingText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' }, help: { color: colors.secondaryLabel, fontSize: 13, lineHeight: 18, textAlign: 'center' }, sheetSafe: { flex: 1, backgroundColor: colors.systemGroupedBackground }, sheetBar: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.separator, backgroundColor: colors.bar }, cancel: { color: colors.tint, fontSize: 17 }, sheetTitle: { color: colors.label, fontSize: 17, fontWeight: '600' }, placeholder: { width: 48 }, sheetContent: { padding: 20, gap: 18, alignItems: 'stretch' }, image: { height: 150, width: '100%' }, productIcon: { alignSelf: 'center', width: 110, height: 110, borderRadius: 24, backgroundColor: colors.secondarySystemBackground, alignItems: 'center', justifyContent: 'center' }, productIconText: { color: colors.tint, fontSize: 54 }, product: { color: colors.label, fontSize: 28, lineHeight: 34, fontWeight: '700', textAlign: 'center' }, labelInput: { minHeight: 50, paddingHorizontal: 16, color: colors.label, fontSize: 17 }, detailRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 }, detailLabel: { color: colors.label, fontSize: 17, flex: 1 }, detailValue: { color: colors.secondaryLabel, fontSize: 17 }, primaryWrap: { paddingTop: 2 }, primary: { minHeight: 50, borderRadius: 12, backgroundColor: colors.tint, alignItems: 'center', justifyContent: 'center' }, primaryDisabled: { opacity: 0.42 }, primaryText: { color: '#FFFFFF', fontSize: 17, fontWeight: '600' }, sheetHelp: { color: colors.secondaryLabel, fontSize: 13, lineHeight: 18, textAlign: 'center' } });
