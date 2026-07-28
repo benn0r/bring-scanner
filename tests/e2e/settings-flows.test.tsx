@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Alert } from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { AuthProvider, LoginModal } from '../../src/auth';
 import { I18nProvider } from '../../src/i18n';
 import { SettingsScreen } from '../../src/screens/SettingsScreen';
 import {
@@ -27,6 +28,17 @@ async function renderSettings() {
   );
 }
 
+async function renderAuthenticatedApp() {
+  return render(
+    <I18nProvider>
+      <AuthProvider>
+        <SettingsScreen />
+        <LoginModal />
+      </AuthProvider>
+    </I18nProvider>,
+  );
+}
+
 beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
@@ -38,7 +50,7 @@ afterEach(() => {
 });
 
 describe('settings flows', () => {
-  it('logs in to Bring and selects a shopping list', async () => {
+  it('requires login, signs in to Bring, selects a list, and logs out', async () => {
     const fetchSpy = jest
       .spyOn(global, 'fetch')
       .mockResolvedValueOnce(jsonResponse({ uuid: 'moon-user', access_token: 'moon-token' }))
@@ -50,16 +62,27 @@ describe('settings flows', () => {
           ],
         }),
       );
-    const screen = await renderSettings();
+    const screen = await renderAuthenticatedApp();
+
+    await waitFor(() => expect(screen.getByText('Sign In to Bring')).toBeTruthy());
+    expect(screen.getByTestId('login-sheet')).toHaveStyle({
+      borderTopLeftRadius: 18,
+      borderTopRightRadius: 18,
+    });
+    await fireEvent(screen.getByTestId('login-modal'), 'requestClose');
+    expect(screen.getByText('Sign In to Bring')).toBeTruthy();
 
     await fireEvent.changeText(
       screen.getByPlaceholderText('you@example.com'),
       'pilot@moon.example',
     );
     await fireEvent.changeText(screen.getByPlaceholderText('Required'), 'lunar-secret');
-    await fireEvent.press(screen.getByText('Connect & Load Lists'));
+    await fireEvent.press(screen.getByText('Sign In'));
 
     await waitFor(() => expect(screen.getByText('Weekend Supplies')).toBeTruthy());
+    expect(screen.getByText('pilot@moon.example')).toBeTruthy();
+    expect(screen.queryByPlaceholderText('you@example.com')).toBeNull();
+    expect(screen.queryByPlaceholderText('Required')).toBeNull();
     expect(String((fetchSpy.mock.calls[0][1] as RequestInit).body)).toContain(
       'email=pilot%40moon.example',
     );
@@ -76,6 +99,38 @@ describe('settings flows', () => {
         name: 'Weekend Supplies',
       }),
     );
+
+    await fireEvent.press(screen.getByText('Log Out'));
+
+    await waitFor(() => expect(screen.getByText('Sign In to Bring')).toBeTruthy());
+    await expect(loadSelectedList()).resolves.toBeNull();
+    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith('bring-credentials');
+  });
+
+  it('keeps the required login modal open after invalid credentials', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValueOnce(
+      jsonResponse(
+        { message: 'Invalid credentials' },
+        {
+          ok: false,
+          status: 401,
+        },
+      ),
+    );
+    const screen = await renderAuthenticatedApp();
+
+    await waitFor(() => expect(screen.getByText('Sign In to Bring')).toBeTruthy());
+    await fireEvent.changeText(
+      screen.getByPlaceholderText('you@example.com'),
+      'pilot@moon.example',
+    );
+    await fireEvent.changeText(screen.getByPlaceholderText('Required'), 'wrong-secret');
+    await fireEvent.press(screen.getByText('Sign In'));
+
+    expect(
+      await screen.findByText('Could not connect to Bring. Check your credentials and try again.'),
+    ).toBeTruthy();
+    expect(screen.getByText('Sign In to Bring')).toBeTruthy();
   });
 
   it('changes the app language', async () => {

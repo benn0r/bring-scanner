@@ -13,21 +13,17 @@ import {
   sheetModal,
   ui,
 } from '../components/ui';
-import { loadLists } from '../services/bringApi';
 import {
   DEFAULT_LOOKUP_PREFERENCES,
-  loadCredentials,
   loadCustomBarcodes,
   loadLookupPreferences,
-  loadSelectedList,
-  saveCredentials,
   saveCustomBarcodes,
   saveLookupPreferences,
-  saveSelectedList,
 } from '../services/storage';
 import { BringList, CustomBarcode, LabelStyle, LookupPreferences, ProductLanguage } from '../types';
 import { PRODUCT_DATABASES } from '../productDatabases';
-import { APP_LANGUAGES, connectionError, translate, useI18n } from '../i18n';
+import { APP_LANGUAGES, translate, useI18n } from '../i18n';
+import { useAuth } from '../auth';
 
 const LANGUAGES: { value: ProductLanguage; title: string }[] = [
   { value: 'auto', title: 'Automatic' },
@@ -44,30 +40,16 @@ const LABEL_STYLES: { value: LabelStyle; title: string; detail: string }[] = [
 
 export function SettingsScreen() {
   const { language: appLanguage, setLanguage: setAppLanguage, t } = useI18n();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [lists, setLists] = useState<BringList[]>([]);
-  const [selected, setSelected] = useState<BringList | null>(null);
+  const { credentials, lists, selectedList: selected, logout, selectList } = useAuth();
   const [barcode, setBarcode] = useState('');
   const [label, setLabel] = useState('');
   const [custom, setCustom] = useState<CustomBarcode[]>([]);
   const [preferences, setPreferences] = useState<LookupPreferences>(DEFAULT_LOOKUP_PREFERENCES);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [customBarcodesVisible, setCustomBarcodesVisible] = useState(false);
   useEffect(() => {
-    Promise.all([
-      loadCredentials(),
-      loadSelectedList(),
-      loadCustomBarcodes(),
-      loadLookupPreferences(),
-    ]).then(([c, l, b, p]) => {
-      if (c) {
-        setEmail(c.email);
-        setPassword(c.password);
-      }
-      setSelected(l);
+    Promise.all([loadCustomBarcodes(), loadLookupPreferences()]).then(([b, p]) => {
       setCustom(b);
       setPreferences(p);
     });
@@ -77,26 +59,13 @@ export function SettingsScreen() {
     const timer = setTimeout(() => setSuccess(''), 3000);
     return () => clearTimeout(timer);
   }, [success]);
-
-  async function connect() {
-    if (!email.trim() || !password) return setError(t('enterCredentials'));
-    setBusy(true);
+  async function signOut() {
+    await logout();
     setError('');
     setSuccess('');
-    try {
-      const result = await loadLists({ email, password });
-      await saveCredentials({ email: email.trim(), password });
-      setLists(result);
-      setSuccess(t('connectedChoose'));
-    } catch {
-      setError(connectionError(appLanguage));
-    } finally {
-      setBusy(false);
-    }
   }
   async function choose(list: BringList) {
-    await saveSelectedList(list);
-    setSelected(list);
+    await selectList(list);
     setSuccess(t('selected', { name: list.name }));
   }
   async function addCustom() {
@@ -178,29 +147,13 @@ export function SettingsScreen() {
             </View>
           ))}
         </Section>
-        <Section title={t('bringAccount')} footer={t('accountFooter')}>
-          <Field
-            label={t('email')}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            textContentType="username"
-            placeholder="you@example.com"
-          />
-          <Separator />
-          <Field
-            label={t('password')}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            textContentType="password"
-            placeholder={t('required')}
-          />
-          <Separator />
-          <ActionButton title={t('connectLoad')} onPress={connect} loading={busy} />
-        </Section>
+        {credentials ? (
+          <Section title={t('bringAccount')} footer={t('accountFooter')}>
+            <ListRow title={t('email')} detail={credentials.email} />
+            <Separator />
+            <ActionButton title={t('logout')} onPress={signOut} destructive />
+          </Section>
+        ) : null}
         {(lists.length > 0 || selected) && (
           <Section title={t('shoppingList')} footer={t('listFooter')}>
             {selected && !lists.some((l) => l.listUuid === selected.listUuid) && (

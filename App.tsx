@@ -7,6 +7,7 @@ import { ScannerScreen } from './src/screens/ScannerScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { colors } from './src/components/ui';
 import { I18nProvider, useI18n } from './src/i18n';
+import { AuthProvider, LoginModal } from './src/auth';
 
 const Tab = createBottomTabNavigator();
 
@@ -71,10 +72,13 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <I18nProvider>
-        <NavigationContainer theme={theme}>
-          <StatusBar style="auto" />
-          <AppTabs dark={scheme === 'dark'} />
-        </NavigationContainer>
+        <AuthProvider>
+          <NavigationContainer theme={theme}>
+            <StatusBar style="auto" />
+            <AppTabs dark={scheme === 'dark'} />
+          </NavigationContainer>
+          <LoginModal />
+        </AuthProvider>
       </I18nProvider>
     </SafeAreaProvider>
   );

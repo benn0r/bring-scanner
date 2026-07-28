@@ -26,8 +26,8 @@ An unofficial React Native iOS companion that scans EAN/UPC barcodes, resolves p
 - Automatic or selected product language with localized-name fallback
 - Generic, exact, or ask-every-time Bring item labels
 - Custom barcode-to-label mappings that override online results
-- Bring credential entry and shopping-list selection
-- Keychain-backed credential storage with `expo-secure-store`
+- Required Bring sign-in with Keychain-backed credential storage
+- Shopping-list selection and explicit logout
 - Confirmation before an item is added, with an optional quantity
 
 ## Run locally

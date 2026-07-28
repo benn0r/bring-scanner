@@ -15,6 +15,10 @@ describe('app translations', () => {
       expect(translate(value, 'customBarcodes')).not.toBe('');
       expect(translate(value, 'manage')).not.toBe('');
       expect(translate(value, 'done')).not.toBe('');
+      expect(translate(value, 'signInToBring')).not.toBe('');
+      expect(translate(value, 'signIn')).not.toBe('');
+      expect(translate(value, 'loginRequired')).not.toBe('');
+      expect(translate(value, 'logout')).not.toBe('');
     }
     expect(translate('de', 'selected', { name: 'Mondbasis' })).toBe('„Mondbasis“ ausgewählt.');
     expect(translate('pt-BR', 'languageSaved', { language: 'Português (Brasil)' })).toContain(

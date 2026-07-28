@@ -35,6 +35,9 @@ export async function clearCredentials() {
 export async function saveSelectedList(value: BringList) {
   await AsyncStorage.setItem(LIST_KEY, JSON.stringify(value));
 }
+export async function clearSelectedList() {
+  await AsyncStorage.removeItem(LIST_KEY);
+}
 export async function loadSelectedList(): Promise<BringList | null> {
   const value = await AsyncStorage.getItem(LIST_KEY);
   return value ? JSON.parse(value) : null;
