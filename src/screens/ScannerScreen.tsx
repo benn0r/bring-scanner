@@ -13,7 +13,16 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ActionButton, colors, LargeTitle, Notice, Section, Separator, ui } from '../components/ui';
+import {
+  ActionButton,
+  colors,
+  LargeTitle,
+  Notice,
+  Section,
+  Separator,
+  sheetModal,
+  ui,
+} from '../components/ui';
 import { addItem } from '../services/bringApi';
 import { lookupProduct } from '../services/productLookup';
 import {
@@ -268,8 +277,8 @@ function ProductSheet({
       transparent
       onRequestClose={onClose}
     >
-      <View style={modalStyles.backdrop}>
-        <SafeAreaView edges={['bottom']} style={[styles.sheetSafe, modalStyles.sheet]}>
+      <View style={sheetModal.backdrop}>
+        <SafeAreaView edges={['bottom']} style={[styles.sheetSafe, sheetModal.sheet]}>
           <View style={styles.sheetBar}>
             <Pressable
               accessibilityRole="button"
@@ -459,17 +468,6 @@ const quantityStyles = StyleSheet.create({
     paddingVertical: 0,
   },
 });
-const modalStyles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.28)' },
-  sheet: {
-    flex: 0,
-    height: '92%',
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    overflow: 'hidden',
-  },
-});
-
 const styles = StyleSheet.create({
   scannerContent: { flex: 1 },
   cameraWrap: {

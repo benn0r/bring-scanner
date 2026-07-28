@@ -10,6 +10,7 @@ import {
   Notice,
   Section,
   Separator,
+  sheetModal,
   ui,
 } from '../components/ui';
 import { loadLists } from '../services/bringApi';
@@ -311,78 +312,85 @@ export function SettingsScreen() {
       <Modal
         visible={customBarcodesVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="overFullScreen"
+        transparent
         onRequestClose={closeCustomBarcodes}
       >
-        <SafeAreaView edges={['top', 'bottom']} style={styles.modalSafe}>
-          <View style={styles.modalHeader}>
-            <View style={styles.modalButtonSpacer} />
-            <Text accessibilityRole="header" style={styles.modalTitle}>
-              {t('customBarcodes')}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('done')}
-              hitSlop={8}
-              onPress={closeCustomBarcodes}
-              style={styles.modalButton}
-            >
-              <Text style={styles.done}>{t('done')}</Text>
-            </Pressable>
-          </View>
-          <ScrollView
-            style={ui.screen}
-            contentContainerStyle={styles.modalContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+        <View style={sheetModal.backdrop}>
+          <SafeAreaView
+            edges={['bottom']}
+            style={[styles.modalSafe, sheetModal.sheet]}
+            testID="custom-barcodes-sheet"
           >
-            <Section title={t('addCustomBarcode')} footer={t('customFooter')}>
-              <Field
-                label={t('barcode')}
-                value={barcode}
-                onChangeText={setBarcode}
-                keyboardType="number-pad"
-                placeholder="7612345678901"
-              />
-              <Separator />
-              <Field
-                label={t('bringLabel')}
-                value={label}
-                onChangeText={setLabel}
-                placeholder={t('productName')}
-              />
-              <Separator />
-              <ActionButton title={t('saveCustom')} onPress={addCustom} />
-            </Section>
-            {custom.length > 0 && (
-              <Section title={t('savedBarcodes')}>
-                {custom.map((item, index) => (
-                  <View key={item.barcode}>
-                    {index > 0 ? <Separator /> : null}
-                    <ListRow
-                      title={item.label}
-                      detail={item.barcode}
-                      trailing={
-                        <Pressable
-                          accessibilityRole="button"
-                          hitSlop={10}
-                          onPress={() => removeCustom(item.barcode)}
-                        >
-                          <Text style={styles.delete}>{t('delete')}</Text>
-                        </Pressable>
-                      }
-                    />
-                  </View>
-                ))}
-              </Section>
-            )}
-          </ScrollView>
-          {(error || success) && (
-            <View pointerEvents="none" style={styles.modalStatus}>
-              {error ? <Notice>{error}</Notice> : <Notice kind="success">{success}</Notice>}
+            <View style={styles.modalHeader}>
+              <View style={styles.modalButtonSpacer} />
+              <Text accessibilityRole="header" style={styles.modalTitle}>
+                {t('customBarcodes')}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('done')}
+                hitSlop={8}
+                onPress={closeCustomBarcodes}
+                style={styles.modalButton}
+              >
+                <Text style={styles.done}>{t('done')}</Text>
+              </Pressable>
             </View>
-          )}
-        </SafeAreaView>
+            <ScrollView
+              style={ui.screen}
+              contentContainerStyle={styles.modalContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <Section title={t('addCustomBarcode')} footer={t('customFooter')}>
+                <Field
+                  label={t('barcode')}
+                  value={barcode}
+                  onChangeText={setBarcode}
+                  keyboardType="number-pad"
+                  placeholder="7612345678901"
+                />
+                <Separator />
+                <Field
+                  label={t('bringLabel')}
+                  value={label}
+                  onChangeText={setLabel}
+                  placeholder={t('productName')}
+                />
+                <Separator />
+                <ActionButton title={t('saveCustom')} onPress={addCustom} />
+              </Section>
+              {custom.length > 0 && (
+                <Section title={t('savedBarcodes')}>
+                  {custom.map((item, index) => (
+                    <View key={item.barcode}>
+                      {index > 0 ? <Separator /> : null}
+                      <ListRow
+                        title={item.label}
+                        detail={item.barcode}
+                        trailing={
+                          <Pressable
+                            accessibilityRole="button"
+                            hitSlop={10}
+                            onPress={() => removeCustom(item.barcode)}
+                          >
+                            <Text style={styles.delete}>{t('delete')}</Text>
+                          </Pressable>
+                        }
+                      />
+                    </View>
+                  ))}
+                </Section>
+              )}
+            </ScrollView>
+            {(error || success) && (
+              <View pointerEvents="none" style={styles.modalStatus}>
+                {error ? <Notice>{error}</Notice> : <Notice kind="success">{success}</Notice>}
+              </View>
+            )}
+          </SafeAreaView>
+        </View>
       </Modal>
     </SafeAreaView>
   );

@@ -24,6 +24,10 @@ describe('custom barcode settings', () => {
 
     expect(screen.getByText('Save Custom Barcode')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy();
+    expect(screen.getByTestId('custom-barcodes-sheet')).toHaveStyle({
+      borderTopLeftRadius: 18,
+      borderTopRightRadius: 18,
+    });
 
     await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
 

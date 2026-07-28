@@ -152,6 +152,16 @@ export const ui = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 8 },
   muted: { color: colors.secondaryLabel, fontSize: 15, lineHeight: 20 },
 });
+export const sheetModal = StyleSheet.create({
+  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.28)' },
+  sheet: {
+    flex: 0,
+    height: '92%',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    overflow: 'hidden',
+  },
+});
 const styles = StyleSheet.create({
   largeTitle: {
     color: colors.label,
