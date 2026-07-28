@@ -16,6 +16,7 @@ export function SettingsScreen() {
   const [preferences, setPreferences] = useState<LookupPreferences>(DEFAULT_LOOKUP_PREFERENCES);
   const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [success, setSuccess] = useState('');
   useEffect(() => { Promise.all([loadCredentials(), loadSelectedList(), loadCustomBarcodes(), loadLookupPreferences()]).then(([c, l, b, p]) => { if (c) { setEmail(c.email); setPassword(c.password); } setSelected(l); setCustom(b); setPreferences(p); }); }, []);
+  useEffect(() => { if (!success) return; const timer = setTimeout(() => setSuccess(''), 3000); return () => clearTimeout(timer); }, [success]);
 
   async function connect() { if (!email.trim() || !password) return setError('Enter your Bring email and password.'); setBusy(true); setError(''); setSuccess(''); try { const result = await loadLists({ email, password }); await saveCredentials({ email: email.trim(), password }); setLists(result); setSuccess('Connected. Choose a shopping list below.'); } catch (e) { setError(e instanceof Error ? e.message : 'Connection failed.'); } finally { setBusy(false); } }
   async function choose(list: BringList) { await saveSelectedList(list); setSelected(list); setSuccess(`${list.name} selected.`); }
@@ -25,8 +26,8 @@ export function SettingsScreen() {
 
   return <SafeAreaView edges={['top']} style={ui.safe}>
     <View style={ui.header}><LargeTitle>Settings</LargeTitle></View>
+    {(error || success) && <View pointerEvents="none" style={styles.statusSlot}>{error ? <Notice>{error}</Notice> : <Notice kind="success">{success}</Notice>}</View>}
     <ScrollView style={ui.screen} contentContainerStyle={ui.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-      {!!error && <Notice>{error}</Notice>}{!!success && <Notice kind="success">{success}</Notice>}
       <Section title="Bring Account" footer="Your password is kept in the iOS Keychain and is never stored in regular app data.">
         <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" textContentType="username" placeholder="you@example.com" />
         <Separator />
@@ -58,4 +59,4 @@ export function SettingsScreen() {
   </SafeAreaView>;
 }
 
-const styles = StyleSheet.create({ delete: { color: colors.destructive, fontSize: 15 }, disclaimer: { color: colors.secondaryLabel, fontSize: 12, lineHeight: 17, textAlign: 'center', marginHorizontal: 18, marginBottom: 12 } });
+const styles = StyleSheet.create({ statusSlot: { position: 'absolute', zIndex: 10, top: 62, left: 16, right: 16 }, delete: { color: colors.destructive, fontSize: 15 }, disclaimer: { color: colors.secondaryLabel, fontSize: 12, lineHeight: 17, textAlign: 'center', marginHorizontal: 18, marginBottom: 12 } });

@@ -32,6 +32,7 @@ export function ScannerScreen() {
 
   useFocusEffect(useCallback(() => { let live = true; Promise.all([loadCredentials(), loadSelectedList()]).then(([c, l]) => live && setConfigured(Boolean(c && l))); return () => { live = false; }; }, []));
   useEffect(() => { loadScanHistory().then(setHistory); }, []);
+  useEffect(() => { if (!message) return; const timer = setTimeout(() => setMessage(''), 3000); return () => clearTimeout(timer); }, [message]);
   useEffect(() => { if (!product) { scanLocked.current = false; setScanning(true); } }, [product]);
   useEffect(() => () => { if (candidateTimer.current) clearTimeout(candidateTimer.current); }, []);
 
@@ -67,18 +68,19 @@ export function ScannerScreen() {
   return <SafeAreaView edges={['top']} style={ui.safe}>
     <View style={ui.header}><LargeTitle>Scan</LargeTitle></View>
     <View style={[ui.screen, ui.content, styles.scannerContent]}>
-      {!configured && <Notice>Connect Bring and choose a shopping list in Settings.</Notice>}
-      {!!error && <Notice>{error}</Notice>}{!!message && <Notice kind="success">{message}</Notice>}
       {!permission.granted ? <Section footer="Camera access is used only to read product barcodes."><ActionButton title="Allow Camera Access" onPress={requestPermission} /></Section> :
-        <View style={styles.cameraWrap} onLayout={({ nativeEvent }) => { const { width } = nativeEvent.layout; scanRegion.current = { left: FRAME_SIDE, top: FRAME_TOP, right: width - FRAME_SIDE, bottom: FRAME_TOP + FRAME_HEIGHT }; scanTarget.current = { x: width / 2, y: FRAME_TOP + FRAME_HEIGHT / 2 }; }}>
-          <CameraView style={styles.camera} facing="back" active={!product} barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }} onBarcodeScanned={scanning ? collectCandidate : undefined} />
-          <View pointerEvents="none" style={styles.scrimTop}><Text style={styles.guidance}>Align the barcode inside the frame</Text></View>
-          <View pointerEvents="none" style={styles.frame} />
-          {busy && <View style={styles.loading}><ActivityIndicator size="large" color="#FFFFFF" /><Text style={styles.loadingText}>Looking Up…</Text></View>}
+        <View style={scannerLayoutStyles.cameraStack}>
+          <View style={styles.cameraWrap} onLayout={({ nativeEvent }) => { const { width } = nativeEvent.layout; scanRegion.current = { left: FRAME_SIDE, top: FRAME_TOP, right: width - FRAME_SIDE, bottom: FRAME_TOP + FRAME_HEIGHT }; scanTarget.current = { x: width / 2, y: FRAME_TOP + FRAME_HEIGHT / 2 }; }}>
+            <CameraView style={styles.camera} facing="back" active={!product} barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }} onBarcodeScanned={scanning ? collectCandidate : undefined} />
+            <View pointerEvents="none" style={styles.scrimTop}><Text style={styles.guidance}>Align the barcode inside the frame</Text></View>
+            <View pointerEvents="none" style={styles.frame} />
+            {busy && <View style={styles.loading}><ActivityIndicator size="large" color="#FFFFFF" /><Text style={styles.loadingText}>Looking Up…</Text></View>}
+          </View>
         </View>}
       <Text style={styles.help}>EAN-8, EAN-13, UPC-A and UPC-E are supported.</Text>
-      {history.length > 0 && <View style={historyStyles.history}><Text style={historyStyles.title}>RECENT SCANS</Text><ScrollView horizontal bounces={false} showsHorizontalScrollIndicator={false} contentContainerStyle={historyStyles.list}>{history.map((item) => <View key={item.barcode} style={historyStyles.card}><Text numberOfLines={1} style={historyStyles.label}>{item.label}</Text><Text numberOfLines={1} style={historyStyles.detail}>{item.brand || item.barcode}</Text></View>)}</ScrollView></View>}
+      <View style={historyStyles.history}>{history.length > 0 && <><Text style={historyStyles.title}>RECENT SCANS</Text><ScrollView horizontal bounces={false} showsHorizontalScrollIndicator={false} contentContainerStyle={historyStyles.list}>{history.map((item) => <View key={item.barcode} style={historyStyles.card}><Text numberOfLines={1} style={historyStyles.label}>{item.label}</Text><Text numberOfLines={1} style={historyStyles.detail}>{item.brand || item.barcode}</Text></View>)}</ScrollView></>}</View>
     </View>
+    {(error || message || !configured) && <View pointerEvents="none" style={statusStyles.popover}>{error ? <Notice>{error}</Notice> : message ? <Notice kind="success">{message}</Notice> : <Notice>Connect Bring and choose a shopping list in Settings.</Notice>}</View>}
     <ProductSheet product={product} busy={busy} configured={configured} onAdd={submit} onClose={() => setProduct(null)} />
   </SafeAreaView>;
 }
@@ -106,6 +108,8 @@ function sourceName(product: Product) {
   return ({ food: 'Open Food Facts', product: 'Open Products Facts', beauty: 'Open Beauty Facts', petfood: 'Open Pet Food Facts' } as const)[product.productType || 'product'];
 }
 
-const historyStyles = StyleSheet.create({ history: { gap: 7 }, title: { color: colors.secondaryLabel, fontSize: 13, lineHeight: 18, marginLeft: 16 }, list: { gap: 10, paddingRight: 16 }, card: { width: 154, minHeight: 58, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10, backgroundColor: colors.secondaryGroupedBackground, justifyContent: 'center' }, label: { color: colors.label, fontSize: 15, lineHeight: 19, fontWeight: '600' }, detail: { color: colors.secondaryLabel, fontSize: 12, lineHeight: 16, marginTop: 2 } });
+const scannerLayoutStyles = StyleSheet.create({ cameraStack: { flex: 1, minHeight: 300, maxHeight: 430, zIndex: 2 } });
+const statusStyles = StyleSheet.create({ popover: { position: 'absolute', zIndex: 10, left: 16, right: 16, bottom: 12 } });
+const historyStyles = StyleSheet.create({ history: { height: 83, gap: 7 }, title: { color: colors.secondaryLabel, fontSize: 13, lineHeight: 18, marginLeft: 16 }, list: { gap: 10, paddingRight: 16 }, card: { width: 154, minHeight: 58, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10, backgroundColor: colors.secondaryGroupedBackground, justifyContent: 'center' }, label: { color: colors.label, fontSize: 15, lineHeight: 19, fontWeight: '600' }, detail: { color: colors.secondaryLabel, fontSize: 12, lineHeight: 16, marginTop: 2 } });
 
 const styles = StyleSheet.create({ scannerContent: { flex: 1 }, cameraWrap: { flex: 1, minHeight: 300, maxHeight: 430, borderRadius: 14, overflow: 'hidden', backgroundColor: '#000000', borderWidth: 2, borderColor: colors.brand }, camera: { flex: 1 }, scrimTop: { position: 'absolute', left: 0, right: 0, top: 0, height: 92, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(10,65,60,0.48)' }, guidance: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' }, frame: { position: 'absolute', left: FRAME_SIDE, right: FRAME_SIDE, top: FRAME_TOP, height: FRAME_HEIGHT, borderWidth: 3, borderRadius: 12, borderColor: colors.brand }, loading: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: 'rgba(7,52,48,0.56)' }, loadingText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' }, help: { color: colors.secondaryLabel, fontSize: 13, lineHeight: 18, textAlign: 'center' }, sheetSafe: { flex: 1, backgroundColor: colors.systemGroupedBackground }, sheetBar: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.separator, backgroundColor: colors.bar }, cancel: { color: colors.tint, fontSize: 17 }, sheetTitle: { color: colors.label, fontSize: 17, fontWeight: '600' }, placeholder: { width: 48 }, sheetContent: { padding: 20, gap: 18, alignItems: 'stretch' }, image: { height: 150, width: '100%' }, productIcon: { alignSelf: 'center', width: 110, height: 110, borderRadius: 24, backgroundColor: colors.secondarySystemBackground, alignItems: 'center', justifyContent: 'center' }, productIconText: { color: colors.tint, fontSize: 54 }, product: { color: colors.label, fontSize: 28, lineHeight: 34, fontWeight: '700', textAlign: 'center' }, labelInput: { minHeight: 50, paddingHorizontal: 16, color: colors.label, fontSize: 17 }, detailRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 }, detailLabel: { color: colors.label, fontSize: 17, flex: 1 }, detailValue: { color: colors.secondaryLabel, fontSize: 17 }, primaryWrap: { paddingTop: 2 }, primary: { minHeight: 50, borderRadius: 12, backgroundColor: colors.tint, alignItems: 'center', justifyContent: 'center' }, primaryDisabled: { opacity: 0.42 }, primaryText: { color: '#FFFFFF', fontSize: 17, fontWeight: '600' }, sheetHelp: { color: colors.secondaryLabel, fontSize: 13, lineHeight: 18, textAlign: 'center' } });
