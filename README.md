@@ -71,8 +71,12 @@ npm run lint
 npm run typecheck
 npm test
 npm run test:e2e
+npm run test:coverage
 npm run build
 ```
+
+The coverage command runs the complete unit and rendered-flow suite and enforces minimum global
+coverage thresholds.
 
 Automatically format the codebase and apply safe ESLint fixes with:
 

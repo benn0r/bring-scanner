@@ -66,16 +66,18 @@ export function ScannerScreen() {
   useFocusEffect(
     useCallback(() => {
       let live = true;
-      Promise.all([loadCredentials(), loadSelectedList()]).then(
-        ([c, l]) => live && setConfigured(Boolean(c && l)),
-      );
+      Promise.all([loadCredentials(), loadSelectedList()])
+        .then(([c, l]) => live && setConfigured(Boolean(c && l)))
+        .catch(() => live && setConfigured(false));
       return () => {
         live = false;
       };
     }, []),
   );
   useEffect(() => {
-    loadScanHistory().then(setHistory);
+    loadScanHistory()
+      .then(setHistory)
+      .catch(() => {});
   }, []);
   useEffect(() => {
     if (!message) return;
@@ -253,7 +255,7 @@ export function ScannerScreen() {
   );
 }
 
-function ProductSheet({
+export function ProductSheet({
   product,
   busy,
   configured,
@@ -276,9 +278,14 @@ function ProductSheet({
       presentationStyle="overFullScreen"
       transparent
       onRequestClose={onClose}
+      testID="product-modal"
     >
       <View style={sheetModal.backdrop}>
-        <SafeAreaView edges={['bottom']} style={[styles.sheetSafe, sheetModal.sheet]}>
+        <SafeAreaView
+          edges={['bottom']}
+          style={[styles.sheetSafe, sheetModal.sheet]}
+          testID="product-sheet"
+        >
           <View style={styles.sheetBar}>
             <Pressable
               accessibilityRole="button"
@@ -293,7 +300,12 @@ function ProductSheet({
           </View>
           <ScrollView contentContainerStyle={styles.sheetContent}>
             {product.imageUrl ? (
-              <Image source={{ uri: product.imageUrl }} style={styles.image} resizeMode="contain" />
+              <Image
+                source={{ uri: product.imageUrl }}
+                style={styles.image}
+                resizeMode="contain"
+                testID="product-image"
+              />
             ) : (
               <View style={styles.productIcon}>
                 <Text style={styles.productIconText}>▦</Text>
@@ -376,6 +388,7 @@ function ProductSheet({
             <View style={styles.primaryWrap}>
               <Pressable
                 accessibilityRole="button"
+                accessibilityLabel={t('addToBring')}
                 disabled={busy || !configured || !label.trim()}
                 onPress={() => onAdd(label.trim(), quantity ? Number(quantity) : undefined)}
                 style={({ pressed }) => [

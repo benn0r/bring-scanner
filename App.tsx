@@ -40,6 +40,7 @@ function AppTabs({ dark }: { dark: boolean }) {
         component={ScannerScreen}
         options={{
           tabBarLabel: t('scan'),
+          tabBarButtonTestID: 'tab-scan',
           tabBarIcon: ({ color }) => <TabIcon symbol="▦" color={color} />,
         }}
       />
@@ -48,6 +49,7 @@ function AppTabs({ dark }: { dark: boolean }) {
         component={SettingsScreen}
         options={{
           tabBarLabel: t('settings'),
+          tabBarButtonTestID: 'tab-settings',
           tabBarIcon: ({ color }) => <TabIcon symbol="⚙︎" color={color} />,
         }}
       />

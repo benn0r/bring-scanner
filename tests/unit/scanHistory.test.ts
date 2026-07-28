@@ -31,4 +31,15 @@ describe('scan history', () => {
     expect(next[0].barcode).toBe('new');
     expect(next.some((item) => item.barcode === '7')).toBe(false);
   });
+
+  it('uses the resolved label when an exact label is empty', () => {
+    const fallbackProduct: Product = {
+      barcode: '33333333',
+      exactLabel: '',
+      label: 'Fallback label',
+      source: 'custom',
+    };
+
+    expect(addToScanHistory([], fallbackProduct, 10)[0].label).toBe('Fallback label');
+  });
 });

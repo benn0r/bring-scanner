@@ -49,10 +49,12 @@ export function SettingsScreen() {
   const [success, setSuccess] = useState('');
   const [customBarcodesVisible, setCustomBarcodesVisible] = useState(false);
   useEffect(() => {
-    Promise.all([loadCustomBarcodes(), loadLookupPreferences()]).then(([b, p]) => {
-      setCustom(b);
-      setPreferences(p);
-    });
+    Promise.all([loadCustomBarcodes(), loadLookupPreferences()])
+      .then(([b, p]) => {
+        setCustom(b);
+        setPreferences(p);
+      })
+      .catch(() => {});
   }, []);
   useEffect(() => {
     if (!success) return;
@@ -121,9 +123,9 @@ export function SettingsScreen() {
       <View style={ui.header}>
         <LargeTitle>{t('settings')}</LargeTitle>
       </View>
-      {(error || success) && (
+      {!customBarcodesVisible && success && (
         <View pointerEvents="none" style={styles.statusSlot}>
-          {error ? <Notice>{error}</Notice> : <Notice kind="success">{success}</Notice>}
+          <Notice kind="success">{success}</Notice>
         </View>
       )}
       <ScrollView
@@ -139,6 +141,7 @@ export function SettingsScreen() {
               <ListRow
                 title={option.name}
                 selected={appLanguage === option.value}
+                testID={`app-language-${option.value}`}
                 onPress={async () => {
                   await setAppLanguage(option.value);
                   setSuccess(translate(option.value, 'languageSaved', { language: option.name }));
@@ -157,7 +160,7 @@ export function SettingsScreen() {
         {(lists.length > 0 || selected) && (
           <Section title={t('shoppingList')} footer={t('listFooter')}>
             {selected && !lists.some((l) => l.listUuid === selected.listUuid) && (
-              <ListRow title={selected.name} selected />
+              <ListRow title={selected.name} selected testID={`list-${selected.listUuid}`} />
             )}
             {lists.map((list, index) => (
               <View key={list.listUuid}>
@@ -168,6 +171,7 @@ export function SettingsScreen() {
                   title={list.name}
                   selected={selected?.listUuid === list.listUuid}
                   onPress={() => choose(list)}
+                  testID={`list-${list.listUuid}`}
                 />
               </View>
             ))}
@@ -191,6 +195,7 @@ export function SettingsScreen() {
                 <ListRow
                   title={title}
                   selected={preferences.language === option.value}
+                  testID={`product-language-${option.value}`}
                   onPress={() =>
                     updatePreferences(
                       { language: option.value },
@@ -219,6 +224,7 @@ export function SettingsScreen() {
                   title={title}
                   detail={t(keys[1])}
                   selected={preferences.labelStyle === style.value}
+                  testID={`label-style-${style.value}`}
                   onPress={() =>
                     updatePreferences({ labelStyle: style.value }, t('labelSet', { style: title }))
                   }
@@ -268,6 +274,7 @@ export function SettingsScreen() {
         presentationStyle="overFullScreen"
         transparent
         onRequestClose={closeCustomBarcodes}
+        testID="custom-barcodes-modal"
       >
         <View style={sheetModal.backdrop}>
           <SafeAreaView

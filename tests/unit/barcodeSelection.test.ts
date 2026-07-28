@@ -1,5 +1,7 @@
 import {
   barcodeCenter,
+  distanceFrom,
+  isInsideRegion,
   keepBestGeometry,
   selectInScanRegion,
   selectMostCentered,
@@ -31,6 +33,22 @@ describe('barcode selection', () => {
     ).toEqual({ x: 150, y: 150 });
   });
 
+  it('returns no center and an infinite distance when geometry is unavailable', () => {
+    const geometryFree = { data: 'geometry-free' };
+
+    expect(barcodeCenter(geometryFree)).toBeNull();
+    expect(distanceFrom(geometryFree, target)).toBe(Number.POSITIVE_INFINITY);
+  });
+
+  it('treats every scan-region boundary as inside', () => {
+    const region = { left: 28, top: 154, right: 322, bottom: 276 };
+
+    expect(isInsideRegion(candidate('top-left', 28, 154), region)).toBe(true);
+    expect(isInsideRegion(candidate('bottom-right', 322, 276), region)).toBe(true);
+    expect(isInsideRegion(candidate('outside', 323, 276), region)).toBe(false);
+    expect(isInsideRegion({ data: 'geometry-free' }, region)).toBe(false);
+  });
+
   it('selects the barcode nearest the scan-frame center', () => {
     const result = selectMostCentered(
       [candidate('left', 70, 215), candidate('centered', 170, 220), candidate('right', 290, 215)],
@@ -47,6 +65,15 @@ describe('barcode selection', () => {
       x: 150,
       y: 200,
     });
+  });
+
+  it('keeps an existing observation when a repeated observation is farther away', () => {
+    const candidates = new Map();
+    const centered = candidate('same', 175, 215);
+    keepBestGeometry(candidates, centered, target);
+    keepBestGeometry(candidates, candidate('same', 20, 20), target);
+
+    expect(candidates.get('same')).toBe(centered);
   });
 
   it('rejects the top barcode and selects the barcode inside the visible frame', () => {
@@ -76,5 +103,27 @@ describe('barcode selection', () => {
         bottom: 276,
       })?.data,
     ).toBe('geometry-free');
+  });
+
+  it('returns null for an empty candidate window', () => {
+    expect(
+      selectInScanRegion([], {
+        left: 28,
+        top: 154,
+        right: 322,
+        bottom: 276,
+      }),
+    ).toBeNull();
+  });
+
+  it('does not use a geometry-free result when another result is positioned outside the frame', () => {
+    expect(
+      selectInScanRegion([candidate('outside', 175, 80), { data: 'geometry-free' }], {
+        left: 28,
+        top: 154,
+        right: 322,
+        bottom: 276,
+      }),
+    ).toBeNull();
   });
 });

@@ -17,6 +17,7 @@ const LOOKUP_PREFERENCES_KEY = 'lookup-preferences';
 const SCAN_HISTORY_KEY = 'scan-history';
 const APP_LANGUAGE_KEY = 'app-language';
 const MAX_SCAN_HISTORY = 8;
+const APP_LANGUAGES: AppLanguage[] = ['en', 'de', 'fr', 'it', 'pt', 'pt-BR'];
 export const DEFAULT_LOOKUP_PREFERENCES: LookupPreferences = {
   language: 'auto',
   labelStyle: 'generic',
@@ -84,7 +85,8 @@ export async function recordScannedProduct(product: Product): Promise<ScanHistor
   return next;
 }
 export async function loadAppLanguage(): Promise<AppLanguage> {
-  return ((await AsyncStorage.getItem(APP_LANGUAGE_KEY)) as AppLanguage | null) || 'en';
+  const stored = await AsyncStorage.getItem(APP_LANGUAGE_KEY);
+  return APP_LANGUAGES.includes(stored as AppLanguage) ? (stored as AppLanguage) : 'en';
 }
 export async function saveAppLanguage(language: AppLanguage) {
   await AsyncStorage.setItem(APP_LANGUAGE_KEY, language);

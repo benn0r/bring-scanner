@@ -33,4 +33,14 @@ describe('custom barcode settings', () => {
 
     expect(screen.queryByText('Save Custom Barcode')).toBeNull();
   });
+
+  it('closes the editor for the native modal close request', async () => {
+    const screen = await render(<SettingsScreen />);
+    await fireEvent.press(screen.getByText('Custom Barcodes'));
+    expect(screen.getByText('Save Custom Barcode')).toBeTruthy();
+
+    await fireEvent(screen.getByTestId('custom-barcodes-modal'), 'requestClose');
+
+    expect(screen.queryByText('Save Custom Barcode')).toBeNull();
+  });
 });

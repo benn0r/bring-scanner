@@ -51,18 +51,26 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let live = true;
-    Promise.all([loadCredentials(), loadSelectedList()]).then(([stored, storedList]) => {
-      if (!live) return;
-      setCredentials(stored);
-      setSelectedList(stored ? storedList : null);
-      setInitializing(false);
-      if (!stored && storedList) clearSelectedList().catch(() => {});
-      if (stored) {
-        loadLists(stored)
-          .then((loadedLists) => live && setLists(loadedLists))
-          .catch(() => {});
-      }
-    });
+    Promise.all([loadCredentials(), loadSelectedList()])
+      .then(([stored, storedList]) => {
+        if (!live) return;
+        setCredentials(stored);
+        setSelectedList(stored ? storedList : null);
+        setInitializing(false);
+        if (!stored && storedList) clearSelectedList().catch(() => {});
+        if (stored) {
+          loadLists(stored)
+            .then((loadedLists) => live && setLists(loadedLists))
+            .catch(() => {});
+        }
+      })
+      .catch(() => {
+        if (!live) return;
+        setCredentials(null);
+        setLists([]);
+        setSelectedList(null);
+        setInitializing(false);
+      });
     return () => {
       live = false;
     };

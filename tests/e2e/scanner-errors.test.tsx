@@ -64,8 +64,15 @@ afterEach(() => {
 });
 
 describe('scanner lookup failures', () => {
-  it('shows a not-found message when no database contains the barcode', async () => {
-    jest.spyOn(global, 'fetch').mockResolvedValue(apiResponse({ ok: false, status: 404 }));
+  it.each([
+    ['404 response', apiResponse({ ok: false, status: 404 })],
+    ['response without a product', apiResponse({ ok: true, status: 200, body: {} })],
+    [
+      'product without a usable name',
+      apiResponse({ ok: true, status: 200, body: { product: { brands: 'Nameless' } } }),
+    ],
+  ])('shows a not-found message for a %s', async (_case, result) => {
+    jest.spyOn(global, 'fetch').mockResolvedValue(result);
     const screen = await renderConfiguredScanner();
 
     await scanBarcode(screen);
@@ -77,11 +84,21 @@ describe('scanner lookup failures', () => {
         { timeout: 2000 },
       ),
     ).toBeTruthy();
+    expect(screen.getByLabelText('Test camera')).toBeEnabled();
   });
 
   it.each([
     ['database HTTP error', () => Promise.resolve(apiResponse({ ok: false, status: 503 }))],
     ['database network error', () => Promise.reject(new Error('offline'))],
+    [
+      'database JSON error',
+      () =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => Promise.reject(new SyntaxError('bad JSON')),
+        } as unknown as Response),
+    ],
   ])('shows a lookup error for a %s', async (_name, response) => {
     jest.spyOn(global, 'fetch').mockImplementationOnce(response);
     const screen = await renderConfiguredScanner();
@@ -91,5 +108,6 @@ describe('scanner lookup failures', () => {
     expect(
       await screen.findByText('Product lookup failed.', undefined, { timeout: 2000 }),
     ).toBeTruthy();
+    expect(screen.getByLabelText('Test camera')).toBeEnabled();
   });
 });

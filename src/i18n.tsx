@@ -559,7 +559,7 @@ type I18nValue = {
 const I18nContext = createContext<I18nValue>({
   language: 'en',
   setLanguage: async () => {},
-  t: (key) => en[key],
+  t: (key, values) => translate('en', key, values),
 });
 const refinements: Partial<Record<AppLanguage, Partial<Record<Key, string>>>> = {
   de: {
@@ -795,7 +795,9 @@ export function translate(language: AppLanguage, key: Key, values: Record<string
 export function I18nProvider({ children }: PropsWithChildren) {
   const [language, setCurrentLanguage] = useState<AppLanguage>('en');
   useEffect(() => {
-    loadAppLanguage().then(setCurrentLanguage);
+    loadAppLanguage()
+      .then(setCurrentLanguage)
+      .catch(() => {});
   }, []);
   const value = useMemo<I18nValue>(
     () => ({

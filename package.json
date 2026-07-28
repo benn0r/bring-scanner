@@ -45,13 +45,27 @@
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand --testPathIgnorePatterns=/tests/e2e/",
     "test:e2e": "jest --runInBand tests/e2e",
+    "test:coverage": "jest --runInBand tests/unit tests/e2e --coverage",
     "build": "expo export --platform ios --output-dir dist"
   },
   "jest": {
     "preset": "jest-expo",
     "setupFilesAfterEnv": [
       "<rootDir>/jest.setup.ts"
-    ]
+    ],
+    "collectCoverageFrom": [
+      "App.tsx",
+      "src/**/*.{ts,tsx}",
+      "!src/types.ts"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "statements": 95,
+        "branches": 90,
+        "functions": 90,
+        "lines": 95
+      }
+    }
   },
   "private": true
 }

@@ -88,6 +88,7 @@ export function ActionButton({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={title}
       disabled={disabled || loading}
       onPress={onPress}
       style={({ pressed }) => [styles.action, (pressed || disabled) && styles.dim]}
@@ -106,12 +107,14 @@ export function ListRow({
   selected,
   onPress,
   trailing,
+  testID,
 }: {
   title: string;
   detail?: string;
   selected?: boolean;
   onPress?: () => void;
   trailing?: ReactNode;
+  testID?: string;
 }) {
   const content = (
     <>
@@ -125,13 +128,17 @@ export function ListRow({
   return onPress ? (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ selected }}
       onPress={onPress}
+      testID={testID}
       style={({ pressed }) => [styles.listRow, pressed && styles.pressed]}
     >
       {content}
     </Pressable>
   ) : (
-    <View style={styles.listRow}>{content}</View>
+    <View accessibilityState={{ selected }} style={styles.listRow} testID={testID}>
+      {content}
+    </View>
   );
 }
 export function Notice({
