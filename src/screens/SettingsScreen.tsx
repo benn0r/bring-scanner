@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton, colors, Field, LargeTitle, ListRow, Notice, Section, Separator, ui } from '../components/ui';
 import { loadLists } from '../services/bringApi';
 import { DEFAULT_LOOKUP_PREFERENCES, loadCredentials, loadCustomBarcodes, loadLookupPreferences, loadSelectedList, saveCredentials, saveCustomBarcodes, saveLookupPreferences, saveSelectedList } from '../services/storage';
 import { BringList, CustomBarcode, LabelStyle, LookupPreferences, ProductLanguage } from '../types';
+import { PRODUCT_DATABASES } from '../productDatabases';
 
 const LANGUAGES: Array<{ value: ProductLanguage; title: string }> = [{ value: 'auto', title: 'Automatic' }, { value: 'de', title: 'German' }, { value: 'en', title: 'English' }, { value: 'fr', title: 'French' }, { value: 'it', title: 'Italian' }];
 const LABEL_STYLES: Array<{ value: LabelStyle; title: string; detail: string }> = [{ value: 'generic', title: 'Generic', detail: 'Toilet paper' }, { value: 'exact', title: 'Exact Product', detail: 'Brand, variant and quantity' }, { value: 'ask', title: 'Ask Every Time', detail: 'Start with the exact name and edit it' }];
@@ -53,10 +54,12 @@ export function SettingsScreen() {
         <ActionButton title="Save Custom Barcode" onPress={addCustom} />
       </Section>
       {custom.length > 0 && <Section title="Saved Barcodes">{custom.map((item, index) => <View key={item.barcode}>{index > 0 ? <Separator /> : null}<ListRow title={item.label} detail={item.barcode} trailing={<Pressable accessibilityRole="button" hitSlop={10} onPress={() => removeCustom(item.barcode)}><Text style={styles.delete}>Delete</Text></Pressable>} /></View>)}</Section>}
-      <Section title="About"><ListRow title="Product Databases" detail="Open Food, Products, Beauty & Pet Food Facts" /><Separator /><ListRow title="Bring Integration" detail="Unofficial API" /></Section>
+      <Section title="Product Databases" footer="Product information is community-contributed open data. Tap a database to browse or improve its entries.">
+        {PRODUCT_DATABASES.map((database, index) => <View key={database.url}>{index > 0 ? <Separator /> : null}<ListRow title={database.name} detail={database.description} onPress={() => Linking.openURL(database.url)} trailing={<Text style={styles.open}>Open ↗</Text>} /></View>)}
+      </Section>
       <Text style={styles.disclaimer}>This companion is not affiliated with Bring! Labs AG. Product data © Open Food Facts contributors (ODbL).</Text>
     </ScrollView>
   </SafeAreaView>;
 }
 
-const styles = StyleSheet.create({ statusSlot: { position: 'absolute', zIndex: 10, bottom: 12, left: 16, right: 16 }, delete: { color: colors.destructive, fontSize: 15 }, disclaimer: { color: colors.secondaryLabel, fontSize: 12, lineHeight: 17, textAlign: 'center', marginHorizontal: 18, marginBottom: 12 } });
+const styles = StyleSheet.create({ statusSlot: { position: 'absolute', zIndex: 10, bottom: 12, left: 16, right: 16 }, open: { color: colors.tint, fontSize: 15, fontWeight: '500' }, delete: { color: colors.destructive, fontSize: 15 }, disclaimer: { color: colors.secondaryLabel, fontSize: 12, lineHeight: 17, textAlign: 'center', marginHorizontal: 18, marginBottom: 12 } });
