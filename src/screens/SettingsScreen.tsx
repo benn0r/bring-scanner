@@ -6,7 +6,7 @@ import { loadLists } from '../services/bringApi';
 import { DEFAULT_LOOKUP_PREFERENCES, loadCredentials, loadCustomBarcodes, loadLookupPreferences, loadSelectedList, saveCredentials, saveCustomBarcodes, saveLookupPreferences, saveSelectedList } from '../services/storage';
 import { BringList, CustomBarcode, LabelStyle, LookupPreferences, ProductLanguage } from '../types';
 import { PRODUCT_DATABASES } from '../productDatabases';
-import { APP_LANGUAGES, translate, useI18n } from '../i18n';
+import { APP_LANGUAGES, connectionError, translate, useI18n } from '../i18n';
 
 const LANGUAGES: Array<{ value: ProductLanguage; title: string }> = [{ value: 'auto', title: 'Automatic' }, { value: 'de', title: 'German' }, { value: 'en', title: 'English' }, { value: 'fr', title: 'French' }, { value: 'it', title: 'Italian' }];
 const LABEL_STYLES: Array<{ value: LabelStyle; title: string; detail: string }> = [{ value: 'generic', title: 'Generic', detail: 'Toilet paper' }, { value: 'exact', title: 'Exact Product', detail: 'Brand, variant and quantity' }, { value: 'ask', title: 'Ask Every Time', detail: 'Start with the exact name and edit it' }];
@@ -21,7 +21,7 @@ export function SettingsScreen() {
   useEffect(() => { Promise.all([loadCredentials(), loadSelectedList(), loadCustomBarcodes(), loadLookupPreferences()]).then(([c, l, b, p]) => { if (c) { setEmail(c.email); setPassword(c.password); } setSelected(l); setCustom(b); setPreferences(p); }); }, []);
   useEffect(() => { if (!success) return; const timer = setTimeout(() => setSuccess(''), 3000); return () => clearTimeout(timer); }, [success]);
 
-  async function connect() { if (!email.trim() || !password) return setError(t('enterCredentials')); setBusy(true); setError(''); setSuccess(''); try { const result = await loadLists({ email, password }); await saveCredentials({ email: email.trim(), password }); setLists(result); setSuccess(t('connectedChoose')); } catch (e) { setError(e instanceof Error ? e.message : t('addFailed')); } finally { setBusy(false); } }
+  async function connect() { if (!email.trim() || !password) return setError(t('enterCredentials')); setBusy(true); setError(''); setSuccess(''); try { const result = await loadLists({ email, password }); await saveCredentials({ email: email.trim(), password }); setLists(result); setSuccess(t('connectedChoose')); } catch { setError(connectionError(appLanguage)); } finally { setBusy(false); } }
   async function choose(list: BringList) { await saveSelectedList(list); setSelected(list); setSuccess(t('selected', { name: list.name })); }
   async function addCustom() { const clean = barcode.replace(/\D/g, ''); if (!/^\d{8,14}$/.test(clean) || !label.trim()) return setError(t('invalidCustom')); const next = [...custom.filter((item) => item.barcode !== clean), { barcode: clean, label: label.trim() }]; await saveCustomBarcodes(next); setCustom(next); setBarcode(''); setLabel(''); setError(''); setSuccess(t('customSaved')); }
   function removeCustom(value: string) { Alert.alert(t('removeCustomTitle'), t('removeCustomBody'), [{ text: t('cancel'), style: 'cancel' }, { text: t('remove'), style: 'destructive', onPress: async () => { const next = custom.filter((item) => item.barcode !== value); await saveCustomBarcodes(next); setCustom(next); setError(''); setSuccess(t('customRemoved')); } }]); }

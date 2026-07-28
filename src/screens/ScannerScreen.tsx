@@ -54,7 +54,7 @@ export function ScannerScreen() {
     if (!scanning || busy) return;
     setScanning(false); setBusy(true); setError(''); setMessage('');
     try { const [customBarcodes, preferences] = await Promise.all([loadCustomBarcodes(), loadLookupPreferences()]); const found = await lookupProduct(value, customBarcodes, preferences); if (!found) throw new Error(t('productNotFound')); setHistory(await recordScannedProduct(found)); setProduct(found); }
-    catch (e) { scanLocked.current = false; setError(e instanceof Error ? e.message : t('lookupFailed')); setScanning(true); }
+    catch (e) { scanLocked.current = false; setError(e instanceof Error && e.message === t('productNotFound') ? e.message : t('lookupFailed')); setScanning(true); }
     finally { setBusy(false); }
   }
 
@@ -62,7 +62,7 @@ export function ScannerScreen() {
     if (!product) return;
     setBusy(true); setError('');
     try { const [credentials, list] = await Promise.all([loadCredentials(), loadSelectedList()]); if (!credentials || !list) throw new Error(t('configureFirst')); await addItem(credentials, list.listUuid, label, quantity); setMessage(t('addedTo', { quantity: quantity ? `${quantity}× ` : '', label, list: list.name })); setProduct(null); }
-    catch (e) { setError(e instanceof Error ? e.message : t('addFailed')); }
+    catch (e) { setError(e instanceof Error && e.message === t('configureFirst') ? e.message : t('addFailed')); }
     finally { setBusy(false); }
   }
 
