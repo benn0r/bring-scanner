@@ -1,4 +1,4 @@
-import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { Text, useColorScheme } from 'react-native';
@@ -8,6 +8,7 @@ import { SettingsScreen } from './src/screens/SettingsScreen';
 import { colors } from './src/components/ui';
 import { I18nProvider, useI18n } from './src/i18n';
 import { AuthProvider, LoginModal } from './src/auth';
+import { createNavigationTheme } from './src/theme';
 
 const Tab = createBottomTabNavigator();
 
@@ -56,19 +57,7 @@ function AppTabs({ dark }: { dark: boolean }) {
 
 export default function App() {
   const scheme = useColorScheme();
-  const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
-  const theme = {
-    ...base,
-    colors: {
-      ...base.colors,
-      primary: scheme === 'dark' ? '#72D5CA' : '#237F78',
-      background: scheme === 'dark' ? '#101615' : '#F2F8F6',
-      card: scheme === 'dark' ? '#1B2422' : '#F8FDFB',
-      text: scheme === 'dark' ? '#FFFFFF' : '#171717',
-      border: scheme === 'dark' ? '#394946' : '#D5E0DD',
-      notification: scheme === 'dark' ? '#72D5CA' : '#237F78',
-    },
-  };
+  const theme = createNavigationTheme(scheme);
   return (
     <SafeAreaProvider>
       <I18nProvider>
