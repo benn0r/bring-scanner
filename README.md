@@ -55,10 +55,18 @@ Do not commit a personal device name or UDID to the repository.
 Run verification with:
 
 ```sh
+npm run format:check
+npm run lint
 npm run typecheck
 npm test
 npm run test:e2e
 npm run build
+```
+
+Automatically format the codebase and apply safe ESLint fixes with:
+
+```sh
+npm run fix
 ```
 
 ## Privacy and service notes

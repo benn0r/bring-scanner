@@ -1,7 +1,12 @@
 import { addToScanHistory } from '../../src/services/storage';
 import { Product, ScanHistoryItem } from '../../src/types';
 
-const product = (barcode: string, exactLabel: string): Product => ({ barcode, exactLabel, label: exactLabel, source: 'open-products-family' });
+const product = (barcode: string, exactLabel: string): Product => ({
+  barcode,
+  exactLabel,
+  label: exactLabel,
+  source: 'open-products-family',
+});
 
 describe('scan history', () => {
   it('puts the latest scan first and replaces an older scan of the same barcode', () => {
@@ -16,7 +21,11 @@ describe('scan history', () => {
   });
 
   it('keeps only the eight most recent distinct products', () => {
-    const history = Array.from({ length: 8 }, (_, index) => ({ barcode: String(index), label: String(index), scannedAt: index }));
+    const history = Array.from({ length: 8 }, (_, index) => ({
+      barcode: String(index),
+      label: String(index),
+      scannedAt: index,
+    }));
     const next = addToScanHistory(history, product('new', 'New'), 9);
     expect(next).toHaveLength(8);
     expect(next[0].barcode).toBe('new');
