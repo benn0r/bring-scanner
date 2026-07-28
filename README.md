@@ -84,9 +84,14 @@ npm run fix
 
 Credentials are stored only in secure device storage and are never written to source files or regular app storage. Shopping-list selection and custom barcode mappings remain on the device.
 
-Bring does not provide a documented public API for its shopping-list app. This project uses an isolated, unofficial adapter based on the web API and may stop working when that API changes. It is not affiliated with or endorsed by Bring! Labs AG.
+Product information comes from these community-contributed Open Facts databases:
 
-Product information comes from [Open Food Facts](https://world.openfoodfacts.org/) and is available under the Open Database License. Coverage and labels vary by country and contributor data.
+- [Open Food Facts](https://world.openfoodfacts.org/) for food and drinks
+- [Open Products Facts](https://world.openproductsfacts.org/) for household goods and other non-food products
+- [Open Beauty Facts](https://world.openbeautyfacts.org/) for cosmetics, hygiene, and personal-care products
+- [Open Pet Food Facts](https://world.openpetfoodfacts.org/) for pet food and treats
+
+Their data is available under the Open Database License. Coverage and labels vary by country and contributor data.
 
 ## License
 
