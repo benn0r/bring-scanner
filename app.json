@@ -10,7 +10,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "app.bringscanner.companion",
       "infoPlist": {
-        "NSCameraUsageDescription": "Scan product barcodes to add items to your shopping list."
+        "NSCameraUsageDescription": "Scan product barcodes to add items to your shopping list.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -20,7 +21,10 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

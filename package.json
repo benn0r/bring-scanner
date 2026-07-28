@@ -26,8 +26,8 @@
   "scripts": {
     "start": "expo start",
     "dev:tunnel": "expo start --dev-client --tunnel",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "ios:device": "expo run:ios --device",
     "ios:release": "expo run:ios --device --configuration Release",
     "web": "expo start --web",
@@ -38,7 +38,9 @@
   },
   "jest": {
     "preset": "jest-expo",
-    "setupFilesAfterEnv": ["<rootDir>/jest.setup.ts"]
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.ts"
+    ]
   },
   "private": true
 }
