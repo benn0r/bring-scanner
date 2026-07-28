@@ -1,11 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { BringList, Credentials, CustomBarcode, LookupPreferences } from '../types';
+import { BringList, Credentials, CustomBarcode, LookupPreferences, Product, ScanHistoryItem } from '../types';
 
 const CREDENTIALS_KEY = 'bring-credentials';
 const LIST_KEY = 'selected-list';
 const BARCODES_KEY = 'custom-barcodes';
 const LOOKUP_PREFERENCES_KEY = 'lookup-preferences';
+const SCAN_HISTORY_KEY = 'scan-history';
+const MAX_SCAN_HISTORY = 8;
 export const DEFAULT_LOOKUP_PREFERENCES: LookupPreferences = { language: 'auto', labelStyle: 'generic' };
 
 export async function saveCredentials(value: Credentials) { await SecureStore.setItemAsync(CREDENTIALS_KEY, JSON.stringify(value)); }
@@ -29,3 +31,16 @@ export async function loadLookupPreferences(): Promise<LookupPreferences> {
   return value ? { ...DEFAULT_LOOKUP_PREFERENCES, ...JSON.parse(value) } : DEFAULT_LOOKUP_PREFERENCES;
 }
 export async function saveLookupPreferences(value: LookupPreferences) { await AsyncStorage.setItem(LOOKUP_PREFERENCES_KEY, JSON.stringify(value)); }
+export async function loadScanHistory(): Promise<ScanHistoryItem[]> {
+  const value = await AsyncStorage.getItem(SCAN_HISTORY_KEY);
+  return value ? JSON.parse(value) : [];
+}
+export function addToScanHistory(history: ScanHistoryItem[], product: Product, scannedAt = Date.now()): ScanHistoryItem[] {
+  const item = { barcode: product.barcode, label: product.exactLabel || product.label, brand: product.brand, scannedAt };
+  return [item, ...history.filter((entry) => entry.barcode !== product.barcode)].slice(0, MAX_SCAN_HISTORY);
+}
+export async function recordScannedProduct(product: Product): Promise<ScanHistoryItem[]> {
+  const next = addToScanHistory(await loadScanHistory(), product);
+  await AsyncStorage.setItem(SCAN_HISTORY_KEY, JSON.stringify(next));
+  return next;
+}

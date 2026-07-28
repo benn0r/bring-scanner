@@ -16,7 +16,7 @@ function TabIcon({ symbol, color }: { symbol: string; color: string }) {
 function AppTabs({ dark }: { dark: boolean }) {
   const insets = useSafeAreaInsets();
   return (
-    <Tab.Navigator screenOptions={{ headerShown: false, tabBarActiveTintColor: dark ? '#FF6570' : '#D92D3A', tabBarInactiveTintColor: dark ? '#AEA7A5' : '#807775', tabBarStyle: { height: 50 + insets.bottom, paddingTop: 5, paddingBottom: Math.max(insets.bottom, 5), backgroundColor: colors.bar, borderTopColor: colors.separator }, tabBarLabelStyle: { fontSize: 10, fontWeight: '500' } }}>
+    <Tab.Navigator screenOptions={{ headerShown: false, tabBarActiveTintColor: dark ? '#72D5CA' : '#237F78', tabBarInactiveTintColor: dark ? '#A7B1AF' : '#74817E', tabBarStyle: { height: 50 + insets.bottom, paddingTop: 5, paddingBottom: Math.max(insets.bottom, 5), backgroundColor: colors.bar, borderTopColor: colors.separator }, tabBarLabelStyle: { fontSize: 10, fontWeight: '500' } }}>
       <Tab.Screen name="Scan" component={ScannerScreen} options={{ tabBarIcon: ({ color }) => <TabIcon symbol="▦" color={color} /> }} />
       <Tab.Screen name="Settings" component={SettingsScreen} options={{ tabBarIcon: ({ color }) => <TabIcon symbol="⚙︎" color={color} /> }} />
     </Tab.Navigator>
@@ -26,6 +26,6 @@ function AppTabs({ dark }: { dark: boolean }) {
 export default function App() {
   const scheme = useColorScheme();
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
-  const theme = { ...base, colors: { ...base.colors, primary: scheme === 'dark' ? '#FF6570' : '#D92D3A', background: scheme === 'dark' ? '#141110' : '#F7F3F1', card: scheme === 'dark' ? '#211C1B' : '#FFFBF9', text: scheme === 'dark' ? '#FFFFFF' : '#171717', border: scheme === 'dark' ? '#443D3B' : '#DED7D5', notification: scheme === 'dark' ? '#FF6570' : '#D92D3A' } };
+  const theme = { ...base, colors: { ...base.colors, primary: scheme === 'dark' ? '#72D5CA' : '#237F78', background: scheme === 'dark' ? '#101615' : '#F2F8F6', card: scheme === 'dark' ? '#1B2422' : '#F8FDFB', text: scheme === 'dark' ? '#FFFFFF' : '#171717', border: scheme === 'dark' ? '#394946' : '#D5E0DD', notification: scheme === 'dark' ? '#72D5CA' : '#237F78' } };
   return <SafeAreaProvider><NavigationContainer theme={theme}><StatusBar style="auto" /><AppTabs dark={scheme === 'dark'} /></NavigationContainer></SafeAreaProvider>;
 }
