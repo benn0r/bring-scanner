@@ -25,6 +25,22 @@ npm ci
 npm run ios
 ```
 
+Useful device shortcuts:
+
+```sh
+npm run ios:device   # Debug build on a connected iPhone
+npm run ios:release  # Standalone Release build on a connected iPhone
+npm run dev:tunnel   # Metro dev server reachable through an Expo tunnel
+```
+
+`ios:device` opens Expo's eligible-device picker. To target a device directly without the picker, pass its name locally:
+
+```sh
+npm run ios:device -- "Your iPhone Name"
+```
+
+Do not commit a personal device name or UDID to the repository.
+
 Run verification with:
 
 ```sh
