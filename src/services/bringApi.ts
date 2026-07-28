@@ -1,8 +1,13 @@
 import { BringList, Credentials } from '../types';
 
 const API_URL = 'https://api.getbring.com/rest/v2/';
-const API_KEY = process.env.EXPO_PUBLIC_BRING_API_KEY;
 type Session = { userUuid: string; token: string };
+
+function apiKey() {
+  const value = process.env.EXPO_PUBLIC_BRING_API_KEY;
+  if (!value) throw new Error('Bring Scanner is missing EXPO_PUBLIC_BRING_API_KEY. Add it to your local or build environment.');
+  return value;
+}
 
 async function checkedJson(response: Response, fallback: string) {
   const body = await response.json().catch(() => ({}));
@@ -18,7 +23,7 @@ export async function login(credentials: Credentials): Promise<Session> {
 }
 
 function headers(session: Session) {
-  return { 'X-BRING-API-KEY': API_KEY, 'X-BRING-CLIENT': 'webApp', 'X-BRING-CLIENT-SOURCE': 'webApp', 'X-BRING-COUNTRY': 'CH', 'X-BRING-USER-UUID': session.userUuid, Authorization: `Bearer ${session.token}` };
+  return { 'X-BRING-API-KEY': apiKey(), 'X-BRING-CLIENT': 'webApp', 'X-BRING-CLIENT-SOURCE': 'webApp', 'X-BRING-COUNTRY': 'CH', 'X-BRING-USER-UUID': session.userUuid, Authorization: `Bearer ${session.token}` };
 }
 
 export async function loadLists(credentials: Credentials): Promise<BringList[]> {

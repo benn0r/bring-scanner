@@ -25,6 +25,14 @@ npm ci
 npm run ios
 ```
 
+Before running the app, create an ignored `.env` file:
+
+```sh
+cp .env.example .env
+```
+
+Set `EXPO_PUBLIC_BRING_API_KEY` in that file. For EAS builds, configure the same variable in the Expo project environment. Expo public environment variables are embedded in the compiled app, so this keeps the value out of Git but does not make a mobile client key cryptographically secret.
+
 Useful device shortcuts:
 
 ```sh
