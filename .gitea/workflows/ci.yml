@@ -42,7 +42,8 @@ jobs:
       - run: npm ci
       - run: npm test
   test-integration:
-    needs: build
+    # Keep the short unit gate isolated from the heavier Jest and browser jobs.
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,7 +53,7 @@ jobs:
       - run: npm ci
       - run: npm run test:integration
   test-e2e:
-    needs: build
+    needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -73,7 +74,8 @@ jobs:
             test-results
           if-no-files-found: ignore
   coverage:
-    needs: build
+    # Coverage repeats both Jest suites, so run it after integration and E2E finish.
+    needs: [test-integration, test-e2e]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
