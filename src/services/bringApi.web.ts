@@ -1,16 +1,18 @@
 import { BringList, Credentials } from '../types';
 import { createItemBody, createLoginBody, normalizeLists } from './bringPayloads';
 
-const API_URL = 'https://api.getbring.com/rest/v2/';
+const API_URL = '/__e2e__/bring/';
 type Session = { userUuid: string; token: string };
 
-function apiKey() {
-  const value = process.env.EXPO_PUBLIC_BRING_API_KEY;
-  if (!value)
-    throw new Error(
-      'Bring Scanner is missing EXPO_PUBLIC_BRING_API_KEY. Add it to your local or build environment.',
-    );
-  return value;
+function ensureBrowserTest(credentials: Credentials) {
+  const loopbackHosts = new Set(['127.0.0.1', 'localhost', '::1']);
+  if (
+    process.env.EXPO_PUBLIC_E2E !== '1' ||
+    !loopbackHosts.has(globalThis.location.hostname) ||
+    !credentials.email.trim().toLowerCase().endsWith('.example')
+  ) {
+    throw new Error('The browser test API only accepts fantasy accounts on a loopback host.');
+  }
 }
 
 async function checkedJson(response: Response, fallback: string) {
@@ -19,34 +21,30 @@ async function checkedJson(response: Response, fallback: string) {
   return body;
 }
 
-export async function login(credentials: Credentials): Promise<Session> {
-  const response = await fetch(`${API_URL}bringauth`, {
+async function login(credentials: Credentials): Promise<Session> {
+  ensureBrowserTest(credentials);
+  const response = await fetch(`${API_URL}auth`, {
     method: 'POST',
     body: createLoginBody(credentials),
   });
-  const body = await checkedJson(response, 'Bring sign-in failed. Check your credentials.');
-  if (!body.uuid || !body.access_token)
-    throw new Error('Bring returned an incomplete sign-in response.');
+  const body = await checkedJson(response, 'Browser test sign-in failed.');
+  if (!body.uuid || !body.access_token) throw new Error('Browser test sign-in was incomplete.');
   return { userUuid: body.uuid, token: body.access_token };
 }
 
 function headers(session: Session) {
   return {
-    'X-BRING-API-KEY': apiKey(),
-    'X-BRING-CLIENT': 'webApp',
-    'X-BRING-CLIENT-SOURCE': 'webApp',
-    'X-BRING-COUNTRY': 'CH',
-    'X-BRING-USER-UUID': session.userUuid,
+    'X-E2E-USER-UUID': session.userUuid,
     Authorization: `Bearer ${session.token}`,
   };
 }
 
 export async function loadLists(credentials: Credentials): Promise<BringList[]> {
   const session = await login(credentials);
-  const response = await fetch(`${API_URL}bringusers/${session.userUuid}/lists`, {
+  const response = await fetch(`${API_URL}users/${session.userUuid}/lists`, {
     headers: headers(session),
   });
-  const body = await checkedJson(response, 'Could not load Bring lists.');
+  const body = await checkedJson(response, 'Could not load browser test lists.');
   return normalizeLists(body);
 }
 
@@ -58,7 +56,7 @@ export async function addItem(
 ) {
   const session = await login(credentials);
   const body = createItemBody(label, quantity);
-  const response = await fetch(`${API_URL}bringlists/${encodeURIComponent(listUuid)}`, {
+  const response = await fetch(`${API_URL}lists/${encodeURIComponent(listUuid)}`, {
     method: 'PUT',
     headers: {
       ...headers(session),
@@ -66,5 +64,5 @@ export async function addItem(
     },
     body: body.toString(),
   });
-  if (!response.ok) throw new Error('Bring did not accept the item. Please try again.');
+  if (!response.ok) throw new Error('Browser test list update failed.');
 }

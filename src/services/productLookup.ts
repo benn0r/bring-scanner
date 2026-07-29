@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { CustomBarcode, LookupPreferences, Product, ProductLanguage } from '../types';
 
 type OpenProduct = Record<string, unknown> & {
@@ -105,7 +106,9 @@ export async function lookupProduct(
   });
   const response = await fetch(
     `https://world.openfoodfacts.org/api/v3/product/${barcode}?${query}`,
-    { headers: { 'User-Agent': 'BringScanner/1.0 (mobile companion app)' } },
+    Platform.OS === 'web'
+      ? undefined
+      : { headers: { 'User-Agent': 'BringScanner/1.0 (mobile companion app)' } },
   );
   if (response.status === 404) return null;
   if (!response.ok) throw new Error('The product lookup service is unavailable. Please try again.');

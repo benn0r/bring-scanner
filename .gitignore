@@ -8,6 +8,9 @@ node_modules/
 dist/
 coverage/
 web-build/
+playwright-report/
+test-results/
+blob-report/
 expo-env.d.ts
 
 # Native

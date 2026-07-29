@@ -194,7 +194,7 @@ export function LoginModal() {
             </Section>
           </ScrollView>
           {error ? (
-            <View pointerEvents="none" style={styles.status}>
+            <View pointerEvents="none" style={styles.status} testID="login-status">
               <Notice>{error}</Notice>
             </View>
           ) : null}

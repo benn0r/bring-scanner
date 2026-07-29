@@ -174,6 +174,7 @@ export function ScannerScreen() {
           <View style={scannerLayoutStyles.cameraStack}>
             <View
               style={styles.cameraWrap}
+              testID="scanner-camera-wrap"
               onLayout={({ nativeEvent }) => {
                 const { width } = nativeEvent.layout;
                 scanRegion.current = {
@@ -187,6 +188,7 @@ export function ScannerScreen() {
             >
               <CameraView
                 style={styles.camera}
+                testID="scanner-camera"
                 facing="back"
                 active={!product}
                 barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }}
@@ -195,7 +197,7 @@ export function ScannerScreen() {
               <View pointerEvents="none" style={styles.scrimTop}>
                 <Text style={styles.guidance}>{t('alignBarcode')}</Text>
               </View>
-              <View pointerEvents="none" style={styles.frame} />
+              <View pointerEvents="none" style={styles.frame} testID="scanner-frame" />
               {busy && (
                 <View style={styles.loading}>
                   <ActivityIndicator size="large" color="#FFFFFF" />
@@ -231,8 +233,8 @@ export function ScannerScreen() {
           )}
         </View>
       </View>
-      {(error || message || !configured) && (
-        <View pointerEvents="none" style={statusStyles.popover}>
+      {!product && (error || message || !configured) && (
+        <View pointerEvents="none" style={statusStyles.popover} testID="scanner-status">
           {error ? (
             <Notice>{error}</Notice>
           ) : message ? (
@@ -247,6 +249,7 @@ export function ScannerScreen() {
           product={product}
           busy={busy}
           configured={configured}
+          error={error}
           onAdd={submit}
           onClose={closeProduct}
         />
@@ -259,12 +262,14 @@ export function ProductSheet({
   product,
   busy,
   configured,
+  error = '',
   onAdd,
   onClose,
 }: {
   product: Product;
   busy: boolean;
   configured: boolean;
+  error?: string;
   onAdd: (label: string, quantity?: number) => void;
   onClose: () => void;
 }) {
@@ -317,6 +322,7 @@ export function ProductSheet({
             ) : null}
             <Section title={t('bringLabel')}>
               <TextInput
+                accessibilityLabel={t('bringLabel')}
                 value={label}
                 onChangeText={setLabel}
                 style={styles.labelInput}
@@ -403,6 +409,7 @@ export function ProductSheet({
                 )}
               </Pressable>
             </View>
+            {error ? <Notice testID="product-status">{error}</Notice> : null}
             {!configured && <Text style={styles.sheetHelp}>{t('configureBeforeAdding')}</Text>}
           </ScrollView>
         </SafeAreaView>

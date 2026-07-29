@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  Linking,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ActionButton,
@@ -94,19 +104,26 @@ export function SettingsScreen() {
     setSuccess('');
     setCustomBarcodesVisible(false);
   }
+  async function deleteCustom(value: string) {
+    const next = custom.filter((item) => item.barcode !== value);
+    await saveCustomBarcodes(next);
+    setCustom(next);
+    setError('');
+    setSuccess(t('customRemoved'));
+  }
   function removeCustom(value: string) {
+    if (Platform.OS === 'web') {
+      if (globalThis.confirm(`${t('removeCustomTitle')}\n\n${t('removeCustomBody')}`)) {
+        void deleteCustom(value);
+      }
+      return;
+    }
     Alert.alert(t('removeCustomTitle'), t('removeCustomBody'), [
       { text: t('cancel'), style: 'cancel' },
       {
         text: t('remove'),
         style: 'destructive',
-        onPress: async () => {
-          const next = custom.filter((item) => item.barcode !== value);
-          await saveCustomBarcodes(next);
-          setCustom(next);
-          setError('');
-          setSuccess(t('customRemoved'));
-        },
+        onPress: () => void deleteCustom(value),
       },
     ]);
   }
@@ -124,7 +141,7 @@ export function SettingsScreen() {
         <LargeTitle>{t('settings')}</LargeTitle>
       </View>
       {!customBarcodesVisible && success && (
-        <View pointerEvents="none" style={styles.statusSlot}>
+        <View pointerEvents="none" style={styles.statusSlot} testID="settings-status">
           <Notice kind="success">{success}</Notice>
         </View>
       )}
@@ -239,6 +256,7 @@ export function SettingsScreen() {
             detail={t('customFooter')}
             onPress={openCustomBarcodes}
             trailing={<Text style={styles.open}>{t('manage')}</Text>}
+            testID="custom-barcodes-open"
           />
         </Section>
         <Section title={t('productDatabases')} footer={t('databaseFooter')}>
@@ -345,7 +363,7 @@ export function SettingsScreen() {
               )}
             </ScrollView>
             {(error || success) && (
-              <View pointerEvents="none" style={styles.modalStatus}>
+              <View pointerEvents="none" style={styles.modalStatus} testID="custom-status">
                 {error ? <Notice>{error}</Notice> : <Notice kind="success">{success}</Notice>}
               </View>
             )}

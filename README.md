@@ -70,12 +70,30 @@ npm run format:check
 npm run lint
 npm run typecheck
 npm test
-npm run test:e2e
+npm run test:integration
 npm run test:coverage
 npm run build
+npm run test:e2e:local
 ```
 
-The coverage command runs the complete unit and rendered-flow suite and enforces minimum global
+`npm test` runs isolated unit tests. `npm run test:integration` runs the rendered React Native and
+service flows that previously lived under the misleading E2E name. `npm run test:e2e` runs genuine
+Playwright browser tests against the already exported Expo web bundle. To build that bundle and run
+the browser suite in one command, use:
+
+```sh
+npm run test:e2e:local
+```
+
+The browser suite uses Chromium, a synthetic camera, mocked external services, and enforced
+`.example` account data. Its test API and credential adapter only run on a loopback host, so the
+bundle cannot send credentials to Bring. It covers sign-in and logout, persisted settings, every
+language and label option, custom barcodes, centered-barcode selection, product lookup failures, and
+Bring add/retry behavior without contacting live services. The test-only web export is not uploaded
+as a build artifact, is not a deployable version of this iOS app, and does not replace real-device
+checks for AVFoundation, the iOS Keychain, or native safe areas.
+
+The coverage command runs the complete unit and integration suite and enforces minimum global
 coverage thresholds.
 
 Automatically format the codebase and apply safe ESLint fixes with:
@@ -86,7 +104,10 @@ npm run fix
 
 ## Privacy and service notes
 
-Credentials are stored only in secure device storage and are never written to source files or regular app storage. Shopping-list selection and custom barcode mappings remain on the device.
+In the iOS app, credentials are stored only in secure device storage and are never written to source
+files or regular app storage. The test-only browser build enables an isolated session-only adapter
+for fantasy test credentials. Shopping-list selection and custom barcode mappings remain on the
+device.
 
 Product information comes from these community-contributed Open Facts databases:
 

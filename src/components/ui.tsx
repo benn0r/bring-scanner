@@ -64,6 +64,7 @@ export function Field({ label, ...props }: TextInputProps & { label: string }) {
       <Text style={styles.fieldLabel}>{label}</Text>
       <TextInput
         {...props}
+        accessibilityLabel={props.accessibilityLabel ?? label}
         style={styles.input}
         placeholderTextColor={colors.tertiaryLabel}
         selectionColor={colors.tint}
@@ -129,6 +130,7 @@ export function ListRow({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected }}
+      aria-selected={selected}
       onPress={onPress}
       testID={testID}
       style={({ pressed }) => [styles.listRow, pressed && styles.pressed]}
@@ -136,7 +138,12 @@ export function ListRow({
       {content}
     </Pressable>
   ) : (
-    <View accessibilityState={{ selected }} style={styles.listRow} testID={testID}>
+    <View
+      accessibilityState={{ selected }}
+      aria-selected={selected}
+      style={styles.listRow}
+      testID={testID}
+    >
       {content}
     </View>
   );
@@ -144,9 +151,14 @@ export function ListRow({
 export function Notice({
   children,
   kind = 'error',
-}: PropsWithChildren<{ kind?: 'error' | 'success' }>) {
+  testID,
+}: PropsWithChildren<{ kind?: 'error' | 'success'; testID?: string }>) {
   return (
-    <Text style={[styles.notice, kind === 'success' ? styles.success : styles.error]}>
+    <Text
+      accessibilityRole={kind === 'error' ? 'alert' : undefined}
+      style={[styles.notice, kind === 'success' ? styles.success : styles.error]}
+      testID={testID}
+    >
       {children}
     </Text>
   );
@@ -164,6 +176,7 @@ export const sheetModal = StyleSheet.create({
   sheet: {
     flex: 0,
     height: '92%',
+    minHeight: '92%',
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     overflow: 'hidden',

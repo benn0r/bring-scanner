@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as SecureStore from 'expo-secure-store';
+import * as CredentialStorage from './credentialStorage';
 import {
   AppLanguage,
   BringList,
@@ -24,14 +24,14 @@ export const DEFAULT_LOOKUP_PREFERENCES: LookupPreferences = {
 };
 
 export async function saveCredentials(value: Credentials) {
-  await SecureStore.setItemAsync(CREDENTIALS_KEY, JSON.stringify(value));
+  await CredentialStorage.setItemAsync(CREDENTIALS_KEY, JSON.stringify(value));
 }
 export async function loadCredentials(): Promise<Credentials | null> {
-  const value = await SecureStore.getItemAsync(CREDENTIALS_KEY);
+  const value = await CredentialStorage.getItemAsync(CREDENTIALS_KEY);
   return value ? JSON.parse(value) : null;
 }
 export async function clearCredentials() {
-  await SecureStore.deleteItemAsync(CREDENTIALS_KEY);
+  await CredentialStorage.deleteItemAsync(CREDENTIALS_KEY);
 }
 export async function saveSelectedList(value: BringList) {
   await AsyncStorage.setItem(LIST_KEY, JSON.stringify(value));

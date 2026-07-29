@@ -29,7 +29,8 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: ios-js-bundle
-          path: dist
+          path: dist/ios
+          if-no-files-found: error
   test:
     needs: build
     runs-on: ubuntu-latest
@@ -40,7 +41,7 @@ jobs:
           node-version: 22
       - run: npm ci
       - run: npm test
-  test-e2e:
+  test-integration:
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -49,7 +50,28 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
+      - run: npm run test:integration
+  test-e2e:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run build:web:e2e
+      - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
   coverage:
     needs: build
     runs-on: ubuntu-latest
