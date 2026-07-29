@@ -102,11 +102,14 @@ describe('authentication state', () => {
   it('falls back to logged-out state if local authentication storage cannot be read', async () => {
     jest.mocked(SecureStore.getItemAsync).mockRejectedValue(new Error('keychain unavailable'));
 
-    const screen = await renderAuth(true);
+    await act(async () => {
+      renderAuth();
+    });
 
-    await waitFor(() => expect(screen.getByText('Sign In to Bring')).toBeTruthy());
     expect(auth.initializing).toBe(false);
     expect(auth.credentials).toBeNull();
+    expect(auth.lists).toEqual([]);
+    expect(auth.selectedList).toBeNull();
   });
 
   it('logs in with a trimmed email and clears a previously selected list', async () => {
