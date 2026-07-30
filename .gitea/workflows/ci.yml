@@ -56,13 +56,14 @@ jobs:
     # Browser setup and rendered React Native tests exceed this runner's capacity together.
     needs: test-integration
     runs-on: ubuntu-latest
-    container: mcr.microsoft.com/playwright:v1.62.0-noble
+    container:
+      image: ${{ vars.PLAYWRIGHT_IMAGE }}
+      credentials:
+        username: ${{ gitea.actor }}
+        password: ${{ secrets.REGISTRY_TOKEN }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
       - run: npm ci
       - run: npm run build:web:e2e
       - run: npm run test:e2e
