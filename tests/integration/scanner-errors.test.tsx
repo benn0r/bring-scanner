@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { fireEvent, render } from '@testing-library/react-native';
+import { act, fireEvent, render } from '@testing-library/react-native';
 import { ScannerScreen } from '../../src/screens/ScannerScreen';
 import { saveSelectedList } from '../../src/services/storage';
 
@@ -52,14 +52,21 @@ async function renderConfiguredScanner() {
 
 async function scanBarcode(screen: Awaited<ReturnType<typeof render>>) {
   await fireEvent.press(screen.getByLabelText('Test camera'));
+  await act(async () => {
+    jest.advanceTimersByTime(650);
+    await Promise.resolve();
+  });
 }
 
 beforeEach(async () => {
   await AsyncStorage.clear();
+  jest.useFakeTimers();
   jest.clearAllMocks();
 });
 
 afterEach(() => {
+  jest.clearAllTimers();
+  jest.useRealTimers();
   jest.restoreAllMocks();
 });
 

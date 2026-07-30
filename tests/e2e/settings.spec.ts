@@ -29,37 +29,51 @@ test('selects every language and product-label preference in the browser', async
   expect(headingAfterSave?.y).toBe(headingBeforeSave?.y);
   await expect(status).toBeHidden({ timeout: 5_000 });
 
-  for (const value of ['auto', 'de', 'en', 'fr', 'it']) {
+  for (const [value, title] of [
+    ['auto', 'Automatic'],
+    ['de', 'German'],
+    ['en', 'English'],
+    ['fr', 'French'],
+    ['it', 'Italian'],
+  ] as const) {
     await page.getByTestId(`product-language-${value}`).click();
     await expect(page.getByTestId(`product-language-${value}`)).toHaveAttribute(
       'aria-selected',
       'true',
     );
+    await expect(status).toContainText(`Product language set to ${title}.`);
   }
-  for (const value of ['generic', 'exact', 'ask']) {
+  for (const [value, title] of [
+    ['generic', 'Generic'],
+    ['exact', 'Exact Product'],
+    ['ask', 'Ask Every Time'],
+  ] as const) {
     await page.getByTestId(`label-style-${value}`).click();
     await expect(page.getByTestId(`label-style-${value}`)).toHaveAttribute('aria-selected', 'true');
+    await expect(status).toContainText(`Bring item label set to ${title}.`);
   }
 
   const appLanguages = [
-    ['de', 'Einstellungen'],
-    ['fr', 'Réglages'],
-    ['it', 'Impostazioni'],
-    ['pt', 'Definições'],
-    ['pt-BR', 'Ajustes'],
-    ['en', 'Settings'],
+    ['de', 'Einstellungen', 'Deutsch'],
+    ['fr', 'Réglages', 'Français'],
+    ['it', 'Impostazioni', 'Italiano'],
+    ['pt', 'Definições', 'Português'],
+    ['pt-BR', 'Ajustes', 'Português (Brasil)'],
+    ['en', 'Settings', 'English'],
   ] as const;
-  for (const [value, heading] of appLanguages) {
+  for (const [value, heading, languageName] of appLanguages) {
     await page.getByTestId(`app-language-${value}`).click();
     await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
     await expect(page.getByTestId(`app-language-${value}`)).toHaveAttribute(
       'aria-selected',
       'true',
     );
+    await expect(status).toContainText(languageName);
   }
 
   await page.getByTestId('app-language-pt-BR').click();
   await expect(page.getByRole('heading', { name: 'Ajustes', exact: true })).toBeVisible();
+  await expect(status).toContainText('Português (Brasil)');
 
   await page.reload();
   await expect(page.getByTestId('login-sheet')).toBeHidden();
@@ -73,6 +87,12 @@ test('selects every language and product-label preference in the browser', async
   ]) {
     await expect(page.getByTestId(testId)).toHaveAttribute('aria-selected', 'true');
   }
+  await expect(page.getByTestId('tab-scan')).toContainText('Escanear');
+  await page.getByTestId('tab-scan').click();
+  await expect(page.getByRole('heading', { name: 'Escanear', exact: true })).toBeVisible();
+  await expect(
+    page.getByText('Alinhe o código de barras dentro da moldura', { exact: true }),
+  ).toBeVisible();
 });
 
 test('validates, saves, replaces, and removes custom barcodes', async ({ page }) => {
@@ -98,6 +118,16 @@ test('validates, saves, replaces, and removes custom barcodes', async ({ page })
   await page.getByRole('button', { name: 'Save Custom Barcode' }).click();
   await expect(page.getByText('Moon Towels')).toBeHidden();
   await expect(page.getByText('Lunar Towels')).toHaveCount(1);
+  await expect(page.getByTestId('custom-status')).toContainText('Custom barcode saved.');
+
+  await page.getByRole('button', { name: 'Done' }).click();
+  await expect(page.getByTestId('custom-barcodes-sheet')).toBeHidden();
+  await page.reload();
+  await expect(page.getByTestId('login-sheet')).toBeHidden();
+  await page.getByTestId('tab-settings').click();
+  await page.getByTestId('custom-barcodes-open').click();
+  await expect(page.getByText('Lunar Towels')).toHaveCount(1);
+  await expect(page.getByText('7612345678901')).toBeVisible();
 
   page.once('dialog', (dialog) => dialog.dismiss());
   await page.getByRole('button', { name: 'Delete' }).click();

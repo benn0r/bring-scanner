@@ -27,6 +27,7 @@ export type ApiState = {
   addedItems: URLSearchParams[];
   addedListUuids: string[];
   productRequests: string[];
+  productRequestLanguages: string[];
   products: Record<string, ProductReply>;
 };
 
@@ -39,6 +40,7 @@ export function createApiState(): ApiState {
     addedItems: [],
     addedListUuids: [],
     productRequests: [],
+    productRequestLanguages: [],
     products: {},
   };
 }
@@ -111,6 +113,7 @@ export async function mockExternalApis(page: Page, state: ApiState) {
     const url = new URL(request.url());
     const barcode = url.pathname.split('/').at(-1) ?? '';
     state.productRequests.push(barcode);
+    state.productRequestLanguages.push(url.searchParams.get('lc') ?? '');
     const reply = state.products[barcode] ?? { kind: 'not-found' };
     if (reply.kind === 'network-error') {
       await route.abort('failed');
@@ -200,6 +203,7 @@ export async function signInAndSelectList(page: Page) {
     'true',
   );
   await page.getByTestId('tab-scan').click();
+  await expect(page.getByTestId('scanner-camera-wrap')).toBeVisible();
 }
 
 type BarcodePosition = 'center' | 'top' | 'left';

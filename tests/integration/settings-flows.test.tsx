@@ -48,6 +48,8 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
+  jest.clearAllTimers();
+  jest.useRealTimers();
   jest.restoreAllMocks();
 });
 
@@ -95,12 +97,10 @@ describe('settings flows', () => {
 
     await fireEvent.press(screen.getByText('Weekend Supplies'));
 
-    await waitFor(async () =>
-      expect(await loadSelectedList()).toEqual({
-        listUuid: 'weekend-list',
-        name: 'Weekend Supplies',
-      }),
-    );
+    await expect(loadSelectedList()).resolves.toEqual({
+      listUuid: 'weekend-list',
+      name: 'Weekend Supplies',
+    });
     expect(screen.getByTestId('list-weekend-list').props.accessibilityState).toEqual({
       selected: true,
     });
@@ -215,9 +215,10 @@ describe('settings flows', () => {
 
     await fireEvent.press(screen.getByText('German'));
 
-    await waitFor(async () =>
-      expect(await loadLookupPreferences()).toEqual({ language: 'de', labelStyle: 'generic' }),
-    );
+    await expect(loadLookupPreferences()).resolves.toEqual({
+      language: 'de',
+      labelStyle: 'generic',
+    });
   });
 
   it('supports every product-language setting and confirms each save', async () => {
@@ -232,7 +233,7 @@ describe('settings flows', () => {
 
     for (const [language, title] of options) {
       await fireEvent.press(screen.getByTestId(`product-language-${language}`));
-      await waitFor(async () => expect(await loadLookupPreferences()).toMatchObject({ language }));
+      await expect(loadLookupPreferences()).resolves.toMatchObject({ language });
       expect(screen.getByTestId(`product-language-${language}`).props.accessibilityState).toEqual({
         selected: true,
       });
@@ -245,9 +246,10 @@ describe('settings flows', () => {
 
     await fireEvent.press(screen.getByText('Exact Product'));
 
-    await waitFor(async () =>
-      expect(await loadLookupPreferences()).toEqual({ language: 'auto', labelStyle: 'exact' }),
-    );
+    await expect(loadLookupPreferences()).resolves.toEqual({
+      language: 'auto',
+      labelStyle: 'exact',
+    });
   });
 
   it('supports every Bring label style and confirms each save', async () => {
@@ -260,9 +262,7 @@ describe('settings flows', () => {
 
     for (const [style, title] of options) {
       await fireEvent.press(screen.getByTestId(`label-style-${style}`));
-      await waitFor(async () =>
-        expect(await loadLookupPreferences()).toMatchObject({ labelStyle: style }),
-      );
+      await expect(loadLookupPreferences()).resolves.toMatchObject({ labelStyle: style });
       expect(screen.getByTestId(`label-style-${style}`).props.accessibilityState).toEqual({
         selected: true,
       });
@@ -375,6 +375,5 @@ describe('settings flows', () => {
 
     await act(async () => jest.advanceTimersByTime(3000));
     expect(screen.queryByText('Product language set to German.')).toBeNull();
-    jest.useRealTimers();
   });
 });

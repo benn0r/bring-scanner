@@ -142,6 +142,9 @@ describe('scanner setup and selection', () => {
       { barcode: '22222222', label: 'Star Bread', scannedAt: 1 },
     ]);
     const screen = await render(<ScannerScreen />);
+    await act(async () => {
+      await Promise.resolve();
+    });
     // Keep this broad rendered-content assertion off the expensive RN accessibility traversal.
     const exactTextNodes = (text: string) =>
       screen.container.queryAll((instance) => instance.props.children === text);
@@ -149,7 +152,7 @@ describe('scanner setup and selection', () => {
     expect(exactTextNodes('Align the barcode inside the frame')).toHaveLength(1);
     expect(exactTextNodes('EAN-8, EAN-13, UPC-A and UPC-E are supported.')).toHaveLength(1);
     expect(exactTextNodes('Connect Bring and choose a shopping list in Settings.')).toHaveLength(1);
-    await waitFor(() => expect(exactTextNodes('Moon Milk')).toHaveLength(1));
+    expect(exactTextNodes('Moon Milk')).toHaveLength(1);
     expect(exactTextNodes('Luna')).toHaveLength(1);
     expect(exactTextNodes('22222222')).toHaveLength(1);
   });
@@ -216,6 +219,16 @@ describe('scanner setup and selection', () => {
     await waitFor(() =>
       expect(lookupProduct).toHaveBeenCalledWith('geometry-free', [], expect.anything()),
     );
+  });
+
+  it('cancels a pending detection window when the scanner unmounts', async () => {
+    const screen = await render(<ScannerScreen />);
+    await fireEvent(screen.getByTestId('camera-view'), 'barcodeScanned', scan());
+
+    await screen.unmount();
+    jest.advanceTimersByTime(650);
+
+    expect(lookupProduct).not.toHaveBeenCalled();
   });
 
   it('survives local configuration and history read errors as an unconfigured scanner', async () => {

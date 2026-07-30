@@ -3,6 +3,10 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ${{ gitea.workflow }}-${{ gitea.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality:
     runs-on: ubuntu-latest
@@ -12,6 +16,7 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
+      - run: npm run check:expo
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck

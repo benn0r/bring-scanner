@@ -26,14 +26,17 @@ test('requests camera access and activates the browser camera after approval', a
 test('selects the barcode centered in the scan frame', async ({ page }) => {
   const state = createApiState();
   const top = '7611111111111';
+  const left = '7600000000000';
   const centered = '7622222222222';
   state.products[top] = product('Top Shelf Soda');
+  state.products[left] = product('Left Shelf Soda');
   state.products[centered] = product('Centered Soda');
   await prepareApp(page, state);
   await signInAndSelectList(page);
 
   await emitBarcodeBatch(page, [
     { value: top, position: 'top' },
+    { value: left, position: 'left' },
     { value: centered, position: 'center' },
   ]);
 
@@ -42,6 +45,80 @@ test('selects the barcode centered in the scan frame', async ({ page }) => {
     page.getByTestId('product-sheet').getByText('Centered Soda, 330 ml', { exact: true }),
   ).toBeVisible();
   expect(state.productRequests).toEqual([centered]);
+});
+
+test('disables adding until a list is selected and resumes scanning after cancel', async ({
+  page,
+}) => {
+  const state = createApiState();
+  const first = '7601010101010';
+  const second = '7602020202020';
+  state.products[first] = product('Unconfigured Soda');
+  state.products[second] = product('Second Chance Soda');
+  await prepareApp(page, state);
+  await signIn(page);
+
+  await expect(page.getByTestId('scanner-status')).toContainText(
+    'Connect Bring and choose a shopping list in Settings.',
+  );
+  await emitBarcodeBatch(page, [{ value: first }]);
+  await expect(page.getByTestId('product-sheet')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Add to Bring' })).toBeDisabled();
+  await expect(
+    page.getByText('Configure a shopping list in Settings before adding this item.', {
+      exact: true,
+    }),
+  ).toBeVisible();
+
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByTestId('product-sheet')).toBeHidden();
+  await emitBarcodeBatch(page, [{ value: second }]);
+  await expect(
+    page.getByTestId('product-sheet').getByText('Second Chance Soda, 330 ml', { exact: true }),
+  ).toBeVisible();
+  expect(state.productRequests).toEqual([first, second]);
+  expect(state.addedItems).toEqual([]);
+});
+
+test('uses the selected product language and generic Bring label', async ({ page }) => {
+  const state = createApiState();
+  const barcode = '7603030303030';
+  state.products[barcode] = {
+    kind: 'product',
+    product: {
+      product_name_en: 'Moon Surface Cleaner',
+      generic_name_en: 'Surface cleaner',
+      product_name_fr: 'Nettoyant lunaire',
+      generic_name_fr: 'Nettoyant ménager',
+      brands: 'Orbital Goods',
+      quantity: '750 ml',
+      product_type: 'product',
+    },
+  };
+  await prepareApp(page, state);
+  await signIn(page);
+  await page.getByTestId('tab-settings').click();
+  await page.getByTestId(`list-${FANTASY_LISTS[0].listUuid}`).click();
+  await expect(page.getByTestId('settings-status')).toContainText(
+    `${FANTASY_LISTS[0].name} selected.`,
+  );
+  await page.getByTestId('product-language-fr').click();
+  await expect(page.getByTestId('settings-status')).toContainText(
+    'Product language set to French.',
+  );
+  await page.getByTestId('label-style-generic').click();
+  await expect(page.getByTestId('settings-status')).toContainText(
+    'Bring item label set to Generic.',
+  );
+  await page.getByTestId('tab-scan').click();
+
+  await emitBarcodeBatch(page, [{ value: barcode }]);
+  const sheet = page.getByTestId('product-sheet');
+  await expect(sheet.getByText('Nettoyant lunaire, 750 ml', { exact: true })).toBeVisible();
+  await expect(sheet.getByLabel('Bring Label')).toHaveValue('Nettoyant ménager');
+  await expect(sheet.getByText('Open Products Facts', { exact: true })).toBeVisible();
+  expect(state.productRequests).toEqual([barcode]);
+  expect(state.productRequestLanguages).toEqual(['fr']);
 });
 
 test('adds an edited item with quantity and never sends the barcode to Bring', async ({ page }) => {
@@ -78,6 +155,35 @@ test('adds an edited item with quantity and never sends the barcode to Bring', a
   expect(state.addedItems[0].has('barcode')).toBe(false);
   expect(state.addedItems[0].has('ean')).toBe(false);
   await expect(status).toBeHidden({ timeout: 5_000 });
+});
+
+test('omits an unselected quantity and restores scan history after reload', async ({ page }) => {
+  const state = createApiState();
+  const barcode = '7604040404040';
+  state.products[barcode] = product('Solo Soda');
+  await prepareApp(page, state);
+  await signInAndSelectList(page);
+
+  await emitBarcodeBatch(page, [{ value: barcode }]);
+  const sheet = page.getByTestId('product-sheet');
+  await expect(sheet).toBeVisible();
+  await expect(sheet.getByRole('textbox', { name: 'Quantity', exact: true })).toHaveValue('');
+  await sheet.getByLabel('Bring Label').fill('Single Bottle');
+  await sheet.getByRole('button', { name: 'Add to Bring' }).click();
+
+  await expect(sheet).toBeHidden();
+  await expect(page.getByTestId('scanner-status')).toContainText(
+    `Single Bottle added to ${FANTASY_LISTS[0].name}.`,
+  );
+  expect(state.addedItems).toHaveLength(1);
+  expect(state.addedItems[0].get('purchase')).toBe('Single Bottle');
+  expect(state.addedItems[0].get('specification')).toBe('');
+
+  await page.reload();
+  await expect(page.getByTestId('login-sheet')).toBeHidden();
+  await expect(page.getByText('RECENT SCANS', { exact: true })).toBeVisible();
+  await expect(page.getByText('Solo Soda, 330 ml', { exact: true })).toBeVisible();
+  await expect(page.getByText('Orbital Goods', { exact: true })).toBeVisible();
 });
 
 test('uses a custom barcode without contacting an online product database', async ({ page }) => {

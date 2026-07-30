@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import {
   deviceLocale,
   localizedField,
@@ -145,6 +146,17 @@ describe('product lookup', () => {
     expect(fetchSpy.mock.calls[0][1]).toEqual({
       headers: { 'User-Agent': 'BringScanner/1.0 (mobile companion app)' },
     });
+  });
+
+  it('omits the native User-Agent header in a browser lookup', async () => {
+    jest.replaceProperty(Platform, 'OS', 'web');
+    const fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue({ ok: false, status: 404 } as Response);
+
+    await expect(lookupProduct('7612345678901', [])).resolves.toBeNull();
+
+    expect(fetchSpy).toHaveBeenCalledWith(expect.any(String), undefined);
   });
 
   it('does not repeat quantity already present in the exact name', async () => {
