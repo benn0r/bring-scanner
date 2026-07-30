@@ -172,21 +172,37 @@ describe('required login modal', () => {
   it('validates missing fields without contacting Bring and clears the error while editing', async () => {
     const fetchSpy = jest.spyOn(global, 'fetch');
     const screen = await renderAuth(true);
-    await waitUntilInitialized();
+    const root = screen.container;
+    const validationMessage = 'Enter your Bring email and password.';
+    // Exact host-prop queries avoid the accessibility tree traversal that makes RN Modal
+    // validation disproportionately expensive on constrained CI runners.
+    const nodesWithProps = (expected: Record<string, unknown>) =>
+      root.queryAll((instance) =>
+        Object.entries(expected).every(([name, value]) => instance.props[name] === value),
+      );
+    const nodeWithProps = (expected: Record<string, unknown>) => {
+      const matches = nodesWithProps(expected);
+      expect(matches).toHaveLength(1);
+      return matches[0];
+    };
+    const validationMessages = () => nodesWithProps({ children: validationMessage });
+    await waitFor(() => expect(nodesWithProps({ accessibilityLabel: 'Sign In' })).toHaveLength(1));
 
-    await fireEvent.press(screen.getByText('Sign In'));
-    expect(await screen.findByText('Enter your Bring email and password.')).toBeTruthy();
+    await fireEvent.press(nodeWithProps({ accessibilityLabel: 'Sign In' }));
+    expect(validationMessages()).toHaveLength(1);
     expect(fetchSpy).not.toHaveBeenCalled();
 
     await fireEvent.changeText(
-      screen.getByPlaceholderText('you@example.com'),
+      nodeWithProps({ placeholder: 'you@example.com' }),
       'pilot@moon.example',
     );
-    expect(screen.queryByText('Enter your Bring email and password.')).toBeNull();
+    expect(validationMessages()).toHaveLength(0);
 
-    await fireEvent.press(screen.getByText('Sign In'));
-    expect(await screen.findByText('Enter your Bring email and password.')).toBeTruthy();
-    await fireEvent.changeText(screen.getByPlaceholderText('Required'), 'secret');
-    expect(screen.queryByText('Enter your Bring email and password.')).toBeNull();
+    await fireEvent.press(nodeWithProps({ accessibilityLabel: 'Sign In' }));
+    expect(validationMessages()).toHaveLength(1);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    await fireEvent.changeText(nodeWithProps({ placeholder: 'Required' }), 'secret');
+    expect(validationMessages()).toHaveLength(0);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
