@@ -142,13 +142,16 @@ describe('scanner setup and selection', () => {
       { barcode: '22222222', label: 'Star Bread', scannedAt: 1 },
     ]);
     const screen = await render(<ScannerScreen />);
+    // Keep this broad rendered-content assertion off the expensive RN accessibility traversal.
+    const exactTextNodes = (text: string) =>
+      screen.container.queryAll((instance) => instance.props.children === text);
 
-    expect(screen.getByText('Align the barcode inside the frame')).toBeTruthy();
-    expect(screen.getByText('EAN-8, EAN-13, UPC-A and UPC-E are supported.')).toBeTruthy();
-    expect(screen.getByText('Connect Bring and choose a shopping list in Settings.')).toBeTruthy();
-    expect(await screen.findByText('Moon Milk')).toBeTruthy();
-    expect(screen.getByText('Luna')).toBeTruthy();
-    expect(screen.getByText('22222222')).toBeTruthy();
+    expect(exactTextNodes('Align the barcode inside the frame')).toHaveLength(1);
+    expect(exactTextNodes('EAN-8, EAN-13, UPC-A and UPC-E are supported.')).toHaveLength(1);
+    expect(exactTextNodes('Connect Bring and choose a shopping list in Settings.')).toHaveLength(1);
+    await waitFor(() => expect(exactTextNodes('Moon Milk')).toHaveLength(1));
+    expect(exactTextNodes('Luna')).toHaveLength(1);
+    expect(exactTextNodes('22222222')).toHaveLength(1);
   });
 
   it('chooses the most centered in-frame barcode from a detection window', async () => {
