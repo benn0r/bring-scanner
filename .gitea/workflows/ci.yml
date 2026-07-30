@@ -42,8 +42,7 @@ jobs:
       - run: npm ci
       - run: npm test
   test-integration:
-    # Keep the short unit gate isolated from the heavier Jest and browser jobs.
-    needs: test
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,8 +52,7 @@ jobs:
       - run: npm ci
       - run: npm run test:integration
   test-e2e:
-    # Browser setup and rendered React Native tests exceed this runner's capacity together.
-    needs: test-integration
+    needs: build
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.PLAYWRIGHT_IMAGE }}
@@ -76,8 +74,7 @@ jobs:
             test-results
           if-no-files-found: ignore
   coverage:
-    # Coverage repeats both Jest suites, so run it only after E2E finishes.
-    needs: test-e2e
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
