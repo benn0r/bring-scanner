@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect } from 'react';
-import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, render, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import { AuthProvider, LoginModal, useAuth } from '../../src/auth';
 import { I18nProvider } from '../../src/i18n';
@@ -172,6 +172,7 @@ describe('required login modal', () => {
   it('validates missing fields without contacting Bring and clears the error while editing', async () => {
     const fetchSpy = jest.spyOn(global, 'fetch');
     const screen = await renderAuth(true);
+    await waitUntilInitialized();
     const root = screen.container;
     const validationMessage = 'Enter your Bring email and password.';
     // Exact host-prop queries avoid the accessibility tree traversal that makes RN Modal
@@ -185,23 +186,37 @@ describe('required login modal', () => {
       expect(matches).toHaveLength(1);
       return matches[0];
     };
+    const invoke = (
+      node: ReturnType<typeof nodeWithProps>,
+      handler: 'onClick' | 'onChangeText',
+      ...args: unknown[]
+    ) => {
+      let target: typeof node | null = node;
+      while (target && typeof target.props[handler] !== 'function') target = target.parent;
+      if (!target) throw new Error(`Could not find ${handler} handler.`);
+      return target.props[handler](...args);
+    };
     const validationMessages = () => nodesWithProps({ children: validationMessage });
-    await waitFor(() => expect(nodesWithProps({ accessibilityLabel: 'Sign In' })).toHaveLength(1));
 
-    await fireEvent.press(nodeWithProps({ accessibilityLabel: 'Sign In' }));
+    await act(async () => invoke(nodeWithProps({ accessibilityLabel: 'Sign In' }), 'onClick'));
     expect(validationMessages()).toHaveLength(1);
     expect(fetchSpy).not.toHaveBeenCalled();
 
-    await fireEvent.changeText(
-      nodeWithProps({ placeholder: 'you@example.com' }),
-      'pilot@moon.example',
+    await act(async () =>
+      invoke(
+        nodeWithProps({ placeholder: 'you@example.com' }),
+        'onChangeText',
+        'pilot@moon.example',
+      ),
     );
     expect(validationMessages()).toHaveLength(0);
 
-    await fireEvent.press(nodeWithProps({ accessibilityLabel: 'Sign In' }));
+    await act(async () => invoke(nodeWithProps({ accessibilityLabel: 'Sign In' }), 'onClick'));
     expect(validationMessages()).toHaveLength(1);
     expect(fetchSpy).not.toHaveBeenCalled();
-    await fireEvent.changeText(nodeWithProps({ placeholder: 'Required' }), 'secret');
+    await act(async () =>
+      invoke(nodeWithProps({ placeholder: 'Required' }), 'onChangeText', 'secret'),
+    );
     expect(validationMessages()).toHaveLength(0);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
